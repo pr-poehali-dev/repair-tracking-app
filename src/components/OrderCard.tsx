@@ -6,7 +6,22 @@ import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import AssignUserDialog from '@/components/AssignUserDialog';
 
-export type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
+export type OrderStatus = 
+  | 'received'
+  | 'diagnostics'
+  | 'repair'
+  | 'parts-needed'
+  | 'cost-approval'
+  | 'payment-pending'
+  | 'parts-delivery'
+  | 'parts-arrived'
+  | 'repair-continues'
+  | 'repair-completed'
+  | 'notify-client'
+  | 'client-notified'
+  | 'issued'
+  | 'stuck'
+  | 'disposal';
 
 interface Order {
   id: string;

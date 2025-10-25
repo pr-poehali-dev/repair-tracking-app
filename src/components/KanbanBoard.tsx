@@ -39,25 +39,42 @@ export default function KanbanBoard({
   onViewDetails,
   onStatusChange,
 }: KanbanBoardProps) {
-  const columns: OrderStatus[] = ['received', 'in-progress', 'ready', 'completed'];
+  const columns: OrderStatus[] = [
+    'received',
+    'diagnostics',
+    'repair',
+    'parts-needed',
+    'cost-approval',
+    'payment-pending',
+    'parts-delivery',
+    'parts-arrived',
+    'repair-continues',
+    'repair-completed',
+    'notify-client',
+    'client-notified',
+    'issued',
+    'stuck',
+    'disposal'
+  ];
 
   const getOrdersByStatus = (status: OrderStatus) => {
     return orders.filter((order) => order.status === status);
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {columns.map((status) => {
-        const columnOrders = getOrdersByStatus(status);
-        return (
-          <div key={status} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">{statusConfig[status].label}</h3>
-              <Badge variant="secondary">{columnOrders.length}</Badge>
-            </div>
-            <div className="space-y-3 min-h-[200px]">
-              {columnOrders.map((order) => (
-                <Card key={order.id} className="hover:shadow-md transition-shadow cursor-pointer">
+    <div className="overflow-x-auto">
+      <div className="inline-flex gap-4 min-w-full pb-4" style={{ minWidth: 'max-content' }}>
+        {columns.map((status) => {
+          const columnOrders = getOrdersByStatus(status);
+          return (
+            <div key={status} className="space-y-3" style={{ minWidth: '280px' }}>
+              <div className="flex items-center justify-between sticky top-0 bg-background pb-2">
+                <h3 className="font-semibold text-sm">{statusConfig[status].label}</h3>
+                <Badge variant="secondary">{columnOrders.length}</Badge>
+              </div>
+              <div className="space-y-3 min-h-[200px]">
+                {columnOrders.map((order) => (
+                  <Card key={order.id} className="hover:shadow-md transition-shadow cursor-pointer">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm">{order.clientName}</CardTitle>
                     <p className="text-xs text-muted-foreground">{order.id}</p>

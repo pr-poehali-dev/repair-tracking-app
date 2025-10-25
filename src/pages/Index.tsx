@@ -87,7 +87,7 @@ const mockOrders: Order[] = [
     issue: 'Не морозит',
     appearance: 'Потертости на дверце',
     accessories: 'Полки, ящики в комплекте',
-    status: 'in-progress',
+    status: 'diagnostics',
     priority: 'medium',
     repairType: 'warranty',
     createdAt: '2024-10-23',
@@ -110,7 +110,7 @@ const mockOrders: Order[] = [
     issue: 'Не греет',
     appearance: 'Отличное',
     accessories: 'Поддон стеклянный',
-    status: 'ready',
+    status: 'client-notified',
     priority: 'low',
     repairType: 'cashless',
     createdAt: '2024-10-22',
@@ -126,10 +126,21 @@ const mockOrders: Order[] = [
 ];
 
 const statusConfig = {
-  received: { label: 'Принят', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  'in-progress': { label: 'В работе', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  ready: { label: 'Готов', color: 'bg-green-100 text-green-700 border-green-200' },
-  completed: { label: 'Выдан', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+  received: { label: 'Принят в ремонт', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  diagnostics: { label: 'Диагностика', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  repair: { label: 'Ремонт', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  'parts-needed': { label: 'Требуется запчасть', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+  'cost-approval': { label: 'Согласование стоимости', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+  'payment-pending': { label: 'Ожидание оплаты', color: 'bg-red-100 text-red-700 border-red-200' },
+  'parts-delivery': { label: 'Ожидание поставки', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  'parts-arrived': { label: 'Запчасть поступила', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
+  'repair-continues': { label: 'Ремонт продолжается', color: 'bg-lime-100 text-lime-700 border-lime-200' },
+  'repair-completed': { label: 'Ремонт завершён', color: 'bg-green-100 text-green-700 border-green-200' },
+  'notify-client': { label: 'Оповестить клиента', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+  'client-notified': { label: 'Клиент оповещён', color: 'bg-teal-100 text-teal-700 border-teal-200' },
+  issued: { label: 'Техника выдана', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  stuck: { label: 'Зависшая техника', color: 'bg-rose-100 text-rose-700 border-rose-200' },
+  disposal: { label: 'Утилизация', color: 'bg-gray-100 text-gray-700 border-gray-200' },
 };
 
 const priorityConfig = {
@@ -267,7 +278,7 @@ export default function Index() {
       history: [...order.history, historyItem]
     };
 
-    if (newStatus === 'in-progress' && !order.master && user) {
+    if ((newStatus === 'diagnostics' || newStatus === 'repair') && !order.master && user) {
       updatedOrder.master = user.fullName;
       historyItem.details = 'Назначен мастер';
     }
@@ -315,18 +326,29 @@ export default function Index() {
   const stats = {
     total: orders.length,
     received: orders.filter((o) => o.status === 'received').length,
-    inProgress: orders.filter((o) => o.status === 'in-progress').length,
-    ready: orders.filter((o) => o.status === 'ready').length,
-    completed: orders.filter((o) => o.status === 'completed').length,
+    inProgress: orders.filter((o) => ['diagnostics', 'repair', 'repair-continues'].includes(o.status)).length,
+    ready: orders.filter((o) => ['repair-completed', 'notify-client', 'client-notified'].includes(o.status)).length,
+    completed: orders.filter((o) => o.status === 'issued').length,
     revenue: orders.reduce((sum, o) => sum + (o.price || 0), 0),
   };
 
   const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {
     const statusFlow: Record<OrderStatus, OrderStatus | null> = {
-      'received': 'in-progress',
-      'in-progress': 'ready',
-      'ready': 'completed',
-      'completed': null,
+      'received': 'diagnostics',
+      'diagnostics': 'repair',
+      'repair': 'repair-completed',
+      'parts-needed': 'cost-approval',
+      'cost-approval': 'payment-pending',
+      'payment-pending': 'parts-delivery',
+      'parts-delivery': 'parts-arrived',
+      'parts-arrived': 'repair-continues',
+      'repair-continues': 'repair-completed',
+      'repair-completed': 'notify-client',
+      'notify-client': 'client-notified',
+      'client-notified': 'issued',
+      'issued': null,
+      'stuck': null,
+      'disposal': null,
     };
     return statusFlow[currentStatus];
   };
