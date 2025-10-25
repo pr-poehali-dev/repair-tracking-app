@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Get media files for order",
+      "method": "GET",
+      "path": "/?orderId=1",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Missing orderId parameter",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
