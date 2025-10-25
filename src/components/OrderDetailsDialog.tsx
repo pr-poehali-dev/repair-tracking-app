@@ -9,6 +9,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import AssignUserDialog from '@/components/AssignUserDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,6 +71,7 @@ interface OrderDetailsDialogProps {
   onClose: () => void;
   statusConfig: Record<OrderStatus, { label: string; color: string }>;
   priorityConfig: Record<string, { label: string; color: string }>;
+  onStatusChange?: (orderId: string, status: OrderStatus) => void;
 }
 
 const repairTypeLabels = {
@@ -79,6 +87,7 @@ export default function OrderDetailsDialog({
   onClose,
   statusConfig,
   priorityConfig,
+  onStatusChange,
 }: OrderDetailsDialogProps) {
   const { hasPermission } = useAuth();
   const [isAssignUserOpen, setIsAssignUserOpen] = useState(false);
@@ -109,9 +118,28 @@ export default function OrderDetailsDialog({
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <Badge className={statusConfig[order.status].color}>
-                  {statusConfig[order.status].label}
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge className={statusConfig[order.status].color}>
+                    {statusConfig[order.status].label}
+                  </Badge>
+                  {hasPermission('change_status') && onStatusChange && (
+                    <Select value={order.status} onValueChange={(value) => onStatusChange(order.id, value as OrderStatus)}>
+                      <SelectTrigger className="w-[220px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(statusConfig).map(([key, config]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
+                              {config.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
                 <Badge variant="outline" className={priorityConfig[order.priority].color}>
                   {priorityConfig[order.priority].label}
                 </Badge>

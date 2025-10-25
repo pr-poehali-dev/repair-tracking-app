@@ -154,6 +154,7 @@ export default function Index() {
         onClose={() => setSelectedOrder(null)}
         statusConfig={statusConfig}
         priorityConfig={priorityConfig}
+        onStatusChange={onStatusChange}
       />
 
       <ReceiptDialog order={receiptOrder} onClose={() => setReceiptOrder(null)} />

@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import AssignUserDialog from '@/components/AssignUserDialog';
@@ -129,10 +136,22 @@ export default function OrderCard({
             <Button variant="outline" size="sm" onClick={() => onViewReceipt(order)}>
               <Icon name="FileText" size={16} />
             </Button>
-            {nextStatus && hasPermission('change_status') && (
-              <Button variant="default" size="sm" onClick={() => onStatusChange(order.id, nextStatus)}>
-                <Icon name="ArrowRight" size={16} />
-              </Button>
+            {hasPermission('change_status') && (
+              <Select value={order.status} onValueChange={(value) => onStatusChange(order.id, value as OrderStatus)}>
+                <SelectTrigger className="h-9 w-9 p-0">
+                  <Icon name="RefreshCw" size={16} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(statusConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
+                        {config.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
         </div>

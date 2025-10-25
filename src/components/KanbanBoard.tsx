@@ -1,8 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import { OrderStatus } from './OrderCard';
+import { statusConfig as defaultStatusConfig } from '@/lib/orderUtils';
 
 interface Order {
   id: string;
@@ -103,36 +110,21 @@ export default function KanbanBoard({
                           <Icon name="Eye" size={14} className="mr-1" />
                           Детали
                         </Button>
-                        {status !== 'issued' && status !== 'stuck' && status !== 'disposal' && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                              const nextStatus: Record<OrderStatus, OrderStatus | null> = {
-                                received: 'diagnostics',
-                                diagnostics: 'repair',
-                                repair: 'repair-completed',
-                                'parts-needed': 'cost-approval',
-                                'cost-approval': 'payment-pending',
-                                'payment-pending': 'parts-delivery',
-                                'parts-delivery': 'parts-arrived',
-                                'parts-arrived': 'repair-continues',
-                                'repair-continues': 'repair-completed',
-                                'repair-completed': 'notify-client',
-                                'notify-client': 'client-notified',
-                                'client-notified': 'issued',
-                                issued: null,
-                                stuck: null,
-                                disposal: null,
-                              };
-                              const next = nextStatus[status];
-                              if (next) onStatusChange(order.id, next);
-                            }}
-                          >
-                            <Icon name="ArrowRight" size={14} />
-                          </Button>
-                        )}
+                        <Select value={order.status} onValueChange={(value) => onStatusChange(order.id, value as OrderStatus)}>
+                          <SelectTrigger className="h-8 w-8 p-0">
+                            <Icon name="RefreshCw" size={14} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(defaultStatusConfig).map(([key, config]) => (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
+                                  {config.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </CardContent>
