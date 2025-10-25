@@ -22,7 +22,9 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
+import NewOrderDialog, { NewOrderFormData } from '@/components/NewOrderDialog';
 
 type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
 
@@ -36,9 +38,14 @@ interface OrderHistoryItem {
 interface Order {
   id: string;
   clientName: string;
+  clientAddress: string;
+  clientPhone: string;
   deviceType: string;
   deviceModel: string;
+  serialNumber: string;
   issue: string;
+  appearance: string;
+  accessories: string;
   status: OrderStatus;
   priority: 'low' | 'medium' | 'high';
   createdAt: string;
@@ -50,10 +57,15 @@ interface Order {
 const mockOrders: Order[] = [
   {
     id: 'ORD-001',
-    clientName: 'Иванов Петр',
+    clientName: 'Иванов Петр Сергеевич',
+    clientAddress: 'ул. Ленина, д. 25, кв. 14',
+    clientPhone: '+7 (912) 345-67-89',
     deviceType: 'Стиральная машина',
     deviceModel: 'Samsung WW70',
+    serialNumber: 'SN123456789',
     issue: 'Не включается',
+    appearance: 'Хорошее состояние, без царапин',
+    accessories: 'Инструкция, гарантийный талон',
     status: 'received',
     priority: 'high',
     createdAt: '2024-10-24',
@@ -64,10 +76,15 @@ const mockOrders: Order[] = [
   },
   {
     id: 'ORD-002',
-    clientName: 'Сидорова Анна',
+    clientName: 'Сидорова Анна Ивановна',
+    clientAddress: 'пр. Победы, д. 102, кв. 5',
+    clientPhone: '+7 (923) 456-78-90',
     deviceType: 'Холодильник',
     deviceModel: 'LG GR-B489',
+    serialNumber: 'LG987654321',
     issue: 'Не морозит',
+    appearance: 'Потертости на дверце',
+    accessories: 'Полки, ящики в комплекте',
     status: 'in-progress',
     priority: 'medium',
     createdAt: '2024-10-23',
@@ -80,10 +97,15 @@ const mockOrders: Order[] = [
   },
   {
     id: 'ORD-003',
-    clientName: 'Козлов Сергей',
+    clientName: 'Козлов Сергей Петрович',
+    clientAddress: 'ул. Мира, д. 8, кв. 22',
+    clientPhone: '+7 (934) 567-89-01',
     deviceType: 'Микроволновка',
     deviceModel: 'Panasonic NN',
+    serialNumber: 'PN456789012',
     issue: 'Не греет',
+    appearance: 'Отличное',
+    accessories: 'Поддон стеклянный',
     status: 'ready',
     priority: 'low',
     createdAt: '2024-10-22',
@@ -93,36 +115,6 @@ const mockOrders: Order[] = [
       { timestamp: '2024-10-22 14:00', action: 'Создан заказ', user: 'Сидорова М.' },
       { timestamp: '2024-10-22 15:30', action: 'Переведен в работу', user: 'Иванов Д.', details: 'Назначен мастер' },
       { timestamp: '2024-10-23 10:00', action: 'Ремонт завершен', user: 'Иванов Д.' },
-    ],
-  },
-  {
-    id: 'ORD-004',
-    clientName: 'Морозова Елена',
-    deviceType: 'Посудомойка',
-    deviceModel: 'Bosch SMS',
-    issue: 'Протечка',
-    status: 'in-progress',
-    priority: 'high',
-    createdAt: '2024-10-24',
-    price: 4200,
-    master: 'Петров А.',
-    history: [
-      { timestamp: '2024-10-24 08:45', action: 'Создан заказ', user: 'Сидорова М.' },
-      { timestamp: '2024-10-24 09:10', action: 'Переведен в работу', user: 'Петров А.', details: 'Назначен мастер' },
-    ],
-  },
-  {
-    id: 'ORD-005',
-    clientName: 'Никитин Олег',
-    deviceType: 'Телевизор',
-    deviceModel: 'Sony KD-55',
-    issue: 'Нет изображения',
-    status: 'received',
-    priority: 'medium',
-    createdAt: '2024-10-25',
-    price: 5000,
-    history: [
-      { timestamp: '2024-10-25 12:00', action: 'Создан заказ', user: 'Сидорова М.' },
     ],
   },
 ];
@@ -142,10 +134,40 @@ const priorityConfig = {
 
 export default function Index() {
   const { user, logout } = useAuth();
+  const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+
+  const handleCreateOrder = (formData: NewOrderFormData) => {
+    const newOrderId = `ORD-${String(orders.length + 1).padStart(3, '0')}`;
+    const timestamp = new Date().toLocaleString('ru-RU', { 
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+    
+    const newOrder: Order = {
+      id: newOrderId,
+      ...formData,
+      status: 'received',
+      createdAt: new Date().toISOString().split('T')[0],
+      history: [
+        {
+          timestamp,
+          action: 'Создан заказ',
+          user: user?.fullName || 'Система',
+        },
+      ],
+    };
+    
+    setOrders(prev => [newOrder, ...prev]);
+    toast({
+      title: 'Заказ создан',
+      description: `Заказ ${newOrderId} успешно добавлен в систему`,
+    });
+  };
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     setOrders(prevOrders => 
@@ -277,7 +299,7 @@ export default function Index() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => setIsNewOrderOpen(true)}>
                 <Icon name="Plus" size={18} />
                 Новый заказ
               </Button>
@@ -498,17 +520,69 @@ export default function Index() {
 
           <ScrollArea className="max-h-[calc(90vh-120px)]">
             <div className="space-y-6 pr-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Техника</p>
-                  <p className="font-semibold">{selectedOrder?.deviceType}</p>
-                  <p className="text-sm text-muted-foreground">{selectedOrder?.deviceModel}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Проблема</p>
-                  <p className="font-medium">{selectedOrder?.issue}</p>
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Icon name="User" size={18} className="text-primary" />
+                  Клиент
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">ФИО</p>
+                    <p className="font-medium">{selectedOrder?.clientName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Телефон</p>
+                    <p className="font-medium">{selectedOrder?.clientPhone || '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Адрес</p>
+                    <p className="font-medium">{selectedOrder?.clientAddress || '—'}</p>
+                  </div>
                 </div>
               </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Icon name="Smartphone" size={18} className="text-primary" />
+                  Техника
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Вид</p>
+                    <p className="font-semibold">{selectedOrder?.deviceType}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Модель</p>
+                    <p className="font-medium">{selectedOrder?.deviceModel || '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Серийный номер</p>
+                    <p className="font-medium">{selectedOrder?.serialNumber || '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Внешний вид</p>
+                    <p className="text-sm">{selectedOrder?.appearance || '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Комплектация</p>
+                    <p className="text-sm">{selectedOrder?.accessories || '—'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Icon name="AlertCircle" size={18} className="text-primary" />
+                  Неисправность
+                </h3>
+                <p className="text-sm">{selectedOrder?.issue}</p>
+              </div>
+
+              <Separator />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -523,9 +597,6 @@ export default function Index() {
                     {selectedOrder ? priorityConfig[selectedOrder.priority].label : ''}
                   </Badge>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Мастер</p>
                   <p className="font-medium">{selectedOrder?.master || '—'}</p>
@@ -567,6 +638,12 @@ export default function Index() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      <NewOrderDialog
+        open={isNewOrderOpen}
+        onOpenChange={setIsNewOrderOpen}
+        onSubmit={handleCreateOrder}
+      />
     </div>
   );
 }
