@@ -52,6 +52,7 @@ export default function OrderCard({
   const nextStatus = getNextStatus(order.status);
 
   return (
+    <>
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -128,5 +129,6 @@ export default function OrderCard({
       isOpen={isAssignUserOpen}
       onClose={() => setIsAssignUserOpen(false)}
     />
+    </>
   );
 }
