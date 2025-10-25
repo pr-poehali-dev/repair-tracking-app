@@ -103,17 +103,28 @@ export default function KanbanBoard({
                           <Icon name="Eye" size={14} className="mr-1" />
                           Детали
                         </Button>
-                        {status !== 'completed' && (
+                        {status !== 'issued' && status !== 'stuck' && status !== 'disposal' && (
                           <Button
                             variant="default"
                             size="sm"
                             className="text-xs"
                             onClick={() => {
                               const nextStatus: Record<OrderStatus, OrderStatus | null> = {
-                                received: 'in-progress',
-                                'in-progress': 'ready',
-                                ready: 'completed',
-                                completed: null,
+                                received: 'diagnostics',
+                                diagnostics: 'repair',
+                                repair: 'repair-completed',
+                                'parts-needed': 'cost-approval',
+                                'cost-approval': 'payment-pending',
+                                'payment-pending': 'parts-delivery',
+                                'parts-delivery': 'parts-arrived',
+                                'parts-arrived': 'repair-continues',
+                                'repair-continues': 'repair-completed',
+                                'repair-completed': 'notify-client',
+                                'notify-client': 'client-notified',
+                                'client-notified': 'issued',
+                                issued: null,
+                                stuck: null,
+                                disposal: null,
                               };
                               const next = nextStatus[status];
                               if (next) onStatusChange(order.id, next);
@@ -125,12 +136,13 @@ export default function KanbanBoard({
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
