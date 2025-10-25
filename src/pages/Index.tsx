@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,6 +48,8 @@ interface Order {
   master?: string;
   history: OrderHistoryItem[];
 }
+
+const API_URL = 'https://functions.poehali.dev/e9af1ae4-2b09-4ac1-a49a-bf1172ebfc8c';
 
 const mockOrders: Order[] = [
   {
@@ -136,14 +138,42 @@ const priorityConfig = {
 export default function Index() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleCreateOrder = (formData: NewOrderFormData) => {
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(API_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+      } else {
+        setOrders(mockOrders);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки заказов:', error);
+      setOrders(mockOrders);
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Используются тестовые данные',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateOrder = async (formData: NewOrderFormData) => {
     const maxOrderNumber = orders.reduce((max, order) => {
       const num = parseInt(order.id.replace('ORD-', ''));
       return num > max ? num : max;
@@ -173,46 +203,90 @@ export default function Index() {
       ],
     };
     
-    setOrders(prev => [newOrder, ...prev]);
-    toast({
-      title: 'Заказ создан',
-      description: `Заказ ${newOrderId} успешно добавлен в систему`,
-    });
-    
-    setReceiptOrder(newOrder);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder),
+      });
+      
+      if (response.ok) {
+        const savedOrder = await response.json();
+        setOrders(prev => [savedOrder, ...prev]);
+        toast({
+          title: 'Заказ создан',
+          description: `Заказ ${newOrderId} сохранен в базе данных`,
+        });
+        setReceiptOrder(savedOrder);
+      } else {
+        throw new Error('Ошибка сохранения');
+      }
+    } catch (error) {
+      setOrders(prev => [newOrder, ...prev]);
+      toast({
+        title: 'Заказ создан локально',
+        description: `Заказ ${newOrderId} добавлен (не сохранен в БД)`,
+        variant: 'destructive',
+      });
+      setReceiptOrder(newOrder);
+    }
   };
 
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => {
-        if (order.id === orderId) {
-          const updatedOrder = { ...order, status: newStatus };
-          
-          const historyItem: OrderHistoryItem = {
-            timestamp: new Date().toLocaleString('ru-RU', { 
-              year: 'numeric', month: '2-digit', day: '2-digit',
-              hour: '2-digit', minute: '2-digit'
-            }),
-            action: `Переведен в статус: ${statusConfig[newStatus].label}`,
-            user: user?.fullName || 'Система',
-          };
-          
-          if (newStatus === 'in-progress' && !order.master && user) {
-            updatedOrder.master = user.fullName;
-            historyItem.details = 'Назначен мастер';
-          }
-          
-          updatedOrder.history = [...order.history, historyItem];
-          
-          if (selectedOrder?.id === orderId) {
-            setSelectedOrder(updatedOrder);
-          }
-          
-          return updatedOrder;
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const historyItem: OrderHistoryItem = {
+      timestamp: new Date().toLocaleString('ru-RU', { 
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      }),
+      action: `Переведен в статус: ${statusConfig[newStatus].label}`,
+      user: user?.fullName || 'Система',
+    };
+
+    const updatedOrder = { 
+      ...order, 
+      status: newStatus,
+      history: [...order.history, historyItem]
+    };
+
+    if (newStatus === 'in-progress' && !order.master && user) {
+      updatedOrder.master = user.fullName;
+      historyItem.details = 'Назначен мастер';
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedOrder),
+      });
+
+      if (response.ok) {
+        const savedOrder = await response.json();
+        setOrders(prevOrders => 
+          prevOrders.map(o => o.id === orderId ? savedOrder : o)
+        );
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(savedOrder);
         }
-        return order;
-      })
-    );
+      } else {
+        throw new Error('Ошибка обновления');
+      }
+    } catch (error) {
+      setOrders(prevOrders => 
+        prevOrders.map(o => o.id === orderId ? updatedOrder : o)
+      );
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(updatedOrder);
+      }
+      toast({
+        title: 'Статус обновлен локально',
+        description: 'Изменения не сохранены в базе данных',
+        variant: 'destructive',
+      });
+    }
   };
 
   const filteredOrders = orders.filter(
