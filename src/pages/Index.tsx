@@ -14,9 +14,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 
 type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
+
+interface OrderHistoryItem {
+  timestamp: string;
+  action: string;
+  user: string;
+  details?: string;
+}
 
 interface Order {
   id: string;
@@ -29,6 +44,7 @@ interface Order {
   createdAt: string;
   price?: number;
   master?: string;
+  history: OrderHistoryItem[];
 }
 
 const mockOrders: Order[] = [
@@ -42,6 +58,9 @@ const mockOrders: Order[] = [
     priority: 'high',
     createdAt: '2024-10-24',
     price: 2500,
+    history: [
+      { timestamp: '2024-10-24 10:30', action: 'Создан заказ', user: 'Сидорова М.' },
+    ],
   },
   {
     id: 'ORD-002',
@@ -54,6 +73,10 @@ const mockOrders: Order[] = [
     createdAt: '2024-10-23',
     price: 3500,
     master: 'Петров А.',
+    history: [
+      { timestamp: '2024-10-23 09:15', action: 'Создан заказ', user: 'Сидорова М.' },
+      { timestamp: '2024-10-23 11:20', action: 'Переведен в работу', user: 'Петров А.', details: 'Назначен мастер' },
+    ],
   },
   {
     id: 'ORD-003',
@@ -66,6 +89,11 @@ const mockOrders: Order[] = [
     createdAt: '2024-10-22',
     price: 1800,
     master: 'Иванов Д.',
+    history: [
+      { timestamp: '2024-10-22 14:00', action: 'Создан заказ', user: 'Сидорова М.' },
+      { timestamp: '2024-10-22 15:30', action: 'Переведен в работу', user: 'Иванов Д.', details: 'Назначен мастер' },
+      { timestamp: '2024-10-23 10:00', action: 'Ремонт завершен', user: 'Иванов Д.' },
+    ],
   },
   {
     id: 'ORD-004',
@@ -78,6 +106,10 @@ const mockOrders: Order[] = [
     createdAt: '2024-10-24',
     price: 4200,
     master: 'Петров А.',
+    history: [
+      { timestamp: '2024-10-24 08:45', action: 'Создан заказ', user: 'Сидорова М.' },
+      { timestamp: '2024-10-24 09:10', action: 'Переведен в работу', user: 'Петров А.', details: 'Назначен мастер' },
+    ],
   },
   {
     id: 'ORD-005',
@@ -89,6 +121,9 @@ const mockOrders: Order[] = [
     priority: 'medium',
     createdAt: '2024-10-25',
     price: 5000,
+    history: [
+      { timestamp: '2024-10-25 12:00', action: 'Создан заказ', user: 'Сидорова М.' },
+    ],
   },
 ];
 
@@ -110,6 +145,7 @@ export default function Index() {
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     setOrders(prevOrders => 
@@ -117,8 +153,24 @@ export default function Index() {
         if (order.id === orderId) {
           const updatedOrder = { ...order, status: newStatus };
           
+          const historyItem: OrderHistoryItem = {
+            timestamp: new Date().toLocaleString('ru-RU', { 
+              year: 'numeric', month: '2-digit', day: '2-digit',
+              hour: '2-digit', minute: '2-digit'
+            }),
+            action: `Переведен в статус: ${statusConfig[newStatus].label}`,
+            user: user?.fullName || 'Система',
+          };
+          
           if (newStatus === 'in-progress' && !order.master && user) {
             updatedOrder.master = user.fullName;
+            historyItem.details = 'Назначен мастер';
+          }
+          
+          updatedOrder.history = [...order.history, historyItem];
+          
+          if (selectedOrder?.id === orderId) {
+            setSelectedOrder(updatedOrder);
           }
           
           return updatedOrder;
@@ -155,7 +207,7 @@ export default function Index() {
   };
 
   const OrderCard = ({ order }: { order: Order }) => (
-    <Card className="hover:shadow-md transition-shadow animate-fade-in cursor-pointer">
+    <Card className="hover:shadow-md transition-shadow animate-fade-in cursor-pointer" onClick={() => setSelectedOrder(order)}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -196,7 +248,10 @@ export default function Index() {
               size="sm" 
               variant="outline" 
               className="w-full gap-2"
-              onClick={() => handleStatusChange(order.id, getNextStatus(order.status)!)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStatusChange(order.id, getNextStatus(order.status)!);
+              }}
             >
               <Icon name="ArrowRight" size={14} />
               {statusConfig[getNextStatus(order.status)!].label}
@@ -426,6 +481,92 @@ export default function Index() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <Icon name="FileText" size={20} className="text-primary" />
+              </div>
+              <div>
+                <div className="font-bold">{selectedOrder?.id}</div>
+                <div className="text-sm font-normal text-muted-foreground">{selectedOrder?.clientName}</div>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[calc(90vh-120px)]">
+            <div className="space-y-6 pr-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Техника</p>
+                  <p className="font-semibold">{selectedOrder?.deviceType}</p>
+                  <p className="text-sm text-muted-foreground">{selectedOrder?.deviceModel}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Проблема</p>
+                  <p className="font-medium">{selectedOrder?.issue}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Статус</p>
+                  <Badge className={selectedOrder ? statusConfig[selectedOrder.status].color : ''} variant="outline">
+                    {selectedOrder ? statusConfig[selectedOrder.status].label : ''}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Приоритет</p>
+                  <Badge className={selectedOrder ? priorityConfig[selectedOrder.priority].color : ''} variant="outline">
+                    {selectedOrder ? priorityConfig[selectedOrder.priority].label : ''}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Мастер</p>
+                  <p className="font-medium">{selectedOrder?.master || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Стоимость</p>
+                  <p className="font-semibold text-primary">{selectedOrder?.price ? `${selectedOrder.price} ₽` : '—'}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="History" size={18} className="text-primary" />
+                  <h3 className="font-semibold">История изменений</h3>
+                </div>
+                <div className="space-y-3">
+                  {selectedOrder?.history.map((item, index) => (
+                    <div key={index} className="flex gap-3 pb-3 border-b last:border-0">
+                      <div className="bg-primary/10 p-2 rounded-full h-fit">
+                        <Icon name="Clock" size={14} className="text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-1">
+                          <p className="font-medium">{item.action}</p>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">{item.timestamp}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {item.user}
+                          {item.details && <span className="ml-1">• {item.details}</span>}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
