@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface DeviceType {
   id: number;
@@ -16,7 +17,20 @@ interface DeviceType {
   category: string;
 }
 
+interface Client {
+  id: number;
+  fullName: string;
+  phone: string;
+  address: string;
+  devices: Array<{
+    deviceType: string;
+    deviceModel: string;
+    serialNumber: string;
+  }>;
+}
+
 const DEVICE_TYPES_API_URL = 'https://functions.poehali.dev/7e59e15a-4b6d-4147-8829-3060b4d82b31';
+const CLIENTS_API_URL = 'https://functions.poehali.dev/a71e85f8-4a97-42b3-ad3f-f2a76d79cd8f';
 
 interface NewOrderDialogProps {
   open: boolean;
@@ -40,7 +54,10 @@ export interface NewOrderFormData {
 
 export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrderDialogProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
+  const [clientSuggestions, setClientSuggestions] = useState<Client[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [formData, setFormData] = useState<NewOrderFormData>({
     clientName: '',
     clientAddress: '',
@@ -75,10 +92,50 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
     }
   };
 
+  const searchClients = async (query: string, field: 'phone' | 'serialNumber') => {
+    if (query.length < 3) {
+      setClientSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({ [field]: query });
+      const response = await fetch(`${CLIENTS_API_URL}?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setClientSuggestions(data);
+        setShowSuggestions(data.length > 0);
+      }
+    } catch (error) {
+      console.error('Ошибка поиска клиентов:', error);
+    }
+  };
+
+  const fillClientData = (client: Client) => {
+    setFormData(prev => ({
+      ...prev,
+      clientName: client.fullName,
+      clientPhone: client.phone,
+      clientAddress: client.address || '',
+    }));
+    setShowSuggestions(false);
+    toast({
+      title: 'Данные клиента заполнены',
+      description: `Загружены данные: ${client.fullName}`,
+    });
+  };
+
   const handleChange = (field: keyof NewOrderFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+
+    if (field === 'clientPhone' && value.length >= 3) {
+      searchClients(value, 'phone');
+    } else if (field === 'serialNumber' && value.length >= 3) {
+      searchClients(value, 'serialNumber');
     }
   };
 
@@ -94,9 +151,26 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
+      try {
+        await fetch(CLIENTS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: formData.clientName,
+            phone: formData.clientPhone,
+            address: formData.clientAddress,
+            deviceType: formData.deviceType,
+            deviceModel: formData.deviceModel,
+            serialNumber: formData.serialNumber,
+          }),
+        });
+      } catch (error) {
+        console.error('Ошибка сохранения клиента:', error);
+      }
+
       onSubmit(formData);
       setFormData({
         clientName: '',
@@ -112,6 +186,8 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
         repairType: 'paid',
       });
       setErrors({});
+      setClientSuggestions([]);
+      setShowSuggestions(false);
       onOpenChange(false);
     }
   };
@@ -152,16 +228,34 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
                     {errors.clientName && <p className="text-xs text-destructive mt-1">{errors.clientName}</p>}
                   </div>
 
-                  <div>
+                  <div className="relative">
                     <Label htmlFor="clientPhone">Номер телефона <span className="text-destructive">*</span></Label>
                     <Input
                       id="clientPhone"
                       placeholder="+7 (___) ___-__-__"
                       value={formData.clientPhone}
                       onChange={(e) => handleChange('clientPhone', e.target.value)}
+                      onFocus={() => formData.clientPhone.length >= 3 && searchClients(formData.clientPhone, 'phone')}
                       className={errors.clientPhone ? 'border-destructive' : ''}
                     />
                     {errors.clientPhone && <p className="text-xs text-destructive mt-1">{errors.clientPhone}</p>}
+                    
+                    {showSuggestions && clientSuggestions.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {clientSuggestions.map((client) => (
+                          <button
+                            key={client.id}
+                            type="button"
+                            className="w-full text-left px-3 py-2 hover:bg-accent border-b last:border-b-0"
+                            onClick={() => fillClientData(client)}
+                          >
+                            <p className="font-medium">{client.fullName}</p>
+                            <p className="text-xs text-muted-foreground">{client.phone}</p>
+                            {client.address && <p className="text-xs text-muted-foreground">{client.address}</p>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div>

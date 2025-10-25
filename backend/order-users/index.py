@@ -10,9 +10,9 @@ def get_db_connection():
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: API для управления участниками заказов (добавление/удаление пользователей)
-    Args: event с httpMethod, body, pathParams
-    Returns: HTTP response с данными участников заказа
+    Business: API для управления участниками заказов и получения пользователей
+    Args: event с httpMethod, body, pathParams, queryStringParameters
+    Returns: HTTP response с данными участников заказа или списком пользователей
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -33,8 +33,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         if method == 'GET':
-            params = event.get('queryStringParameters', {})
+            params = event.get('queryStringParameters', {}) or {}
             order_id = params.get('orderId')
+            list_users = params.get('listUsers')
+            
+            if list_users == 'true':
+                cursor.execute('''
+                    SELECT 
+                        id,
+                        username,
+                        full_name as "fullName",
+                        role
+                    FROM users
+                    ORDER BY full_name
+                ''')
+                users = cursor.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps([dict(user) for user in users], ensure_ascii=False)
+                }
             
             if not order_id:
                 return {

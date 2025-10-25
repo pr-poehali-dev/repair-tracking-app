@@ -22,6 +22,7 @@ import OrderDetailsDialog from '@/components/OrderDetailsDialog';
 import KanbanBoard from '@/components/KanbanBoard';
 import RoleBadge from '@/components/RoleBadge';
 import DeviceTypesDialog from '@/components/DeviceTypesDialog';
+import ClientsSearchDialog from '@/components/ClientsSearchDialog';
 
 interface OrderHistoryItem {
   timestamp: string;
@@ -148,6 +149,7 @@ export default function Index() {
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeviceTypesOpen, setIsDeviceTypesOpen] = useState(false);
+  const [isClientsSearchOpen, setIsClientsSearchOpen] = useState(false);
 
   useEffect(() => {
     loadOrders();
@@ -381,15 +383,20 @@ export default function Index() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsClientsSearchOpen(true)}>
+                    <Icon name="Users" className="mr-2" size={16} />
+                    База клиентов
+                  </DropdownMenuItem>
                   {hasRole('director') && (
                     <>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setIsDeviceTypesOpen(true)}>
                         <Icon name="Settings" className="mr-2" size={16} />
                         Справочник техники
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                     </>
                   )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>
                     <Icon name="LogOut" className="mr-2" size={16} />
                     Выйти
@@ -503,6 +510,11 @@ export default function Index() {
       <DeviceTypesDialog
         isOpen={isDeviceTypesOpen}
         onClose={() => setIsDeviceTypesOpen(false)}
+      />
+
+      <ClientsSearchDialog
+        isOpen={isClientsSearchOpen}
+        onClose={() => setIsClientsSearchOpen(false)}
       />
     </div>
   );

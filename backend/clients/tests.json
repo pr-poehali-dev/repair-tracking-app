@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "Get all clients",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Search clients",
+      "method": "GET",
+      "path": "/?search=Иванов",
+      "expectedStatus": 200,
+      "bodyMatcher": "type"
+    }
+  ]
+}

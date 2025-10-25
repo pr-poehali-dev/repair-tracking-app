@@ -26,7 +26,6 @@ interface AssignUserDialogProps {
   onClose: () => void;
 }
 
-const USERS_API_URL = 'https://functions.poehali.dev/5f562c35-b8e7-40a4-9f5c-04ff4c4f6925';
 const ORDER_USERS_API_URL = 'https://functions.poehali.dev/eecda2dd-7328-41e9-934b-193583f2411e';
 
 export default function AssignUserDialog({ orderId, isOpen, onClose }: AssignUserDialogProps) {
@@ -44,7 +43,7 @@ export default function AssignUserDialog({ orderId, isOpen, onClose }: AssignUse
 
   const loadUsers = async () => {
     try {
-      const response = await fetch(USERS_API_URL);
+      const response = await fetch(`${ORDER_USERS_API_URL}?listUsers=true`);
       if (response.ok) {
         const data = await response.json();
         setAllUsers(data);
