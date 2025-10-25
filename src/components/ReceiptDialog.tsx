@@ -128,16 +128,25 @@ export default function ReceiptDialog({ open, onOpenChange, order }: ReceiptDial
 
           <Separator className="my-6" />
 
-          <div className="grid grid-cols-2 gap-8 text-sm">
-            <div>
-              <p className="mb-2">Техника принята:</p>
-              <div className="border-b border-black w-full mb-1"></div>
-              <p className="text-xs text-gray-600">(подпись мастера-приёмщика)</p>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-8 text-sm">
+              <div>
+                <p className="mb-2">Техника принята:</p>
+                <div className="border-b border-black w-full mb-1"></div>
+                <p className="text-xs text-gray-600">(подпись мастера-приёмщика)</p>
+              </div>
+              <div>
+                <p className="mb-2">Техника сдана в ремонт:</p>
+                <div className="border-b border-black w-full mb-1"></div>
+                <p className="text-xs text-gray-600">(подпись клиента)</p>
+              </div>
             </div>
-            <div>
-              <p className="mb-2">Техника сдана:</p>
-              <div className="border-b border-black w-full mb-1"></div>
-              <p className="text-xs text-gray-600">(подпись клиента)</p>
+
+            <div className="text-xs text-gray-700 border border-gray-300 p-3 rounded">
+              <p className="font-semibold mb-2">Клиент подтверждает:</p>
+              <p>- Техника сдана в указанной комплектации и состоянии</p>
+              <p>- Ознакомлен с условиями приёма и выдачи техники</p>
+              <p>- Претензий к внешнему виду на момент сдачи не имею</p>
             </div>
           </div>
 
