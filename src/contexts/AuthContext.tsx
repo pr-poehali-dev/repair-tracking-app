@@ -29,28 +29,35 @@ export type Permission =
   | 'edit_finance'
   | 'view_warranty'
   | 'manage_parts'
-  | 'view_all';
+  | 'view_all'
+  | 'edit_repair'
+  | 'create_order'
+  | 'manage_device_types'
+  | 'view_clients';
 
 const rolePermissions: Record<UserRole, Permission[]> = {
   director: [
     'view_orders', 'create_orders', 'edit_orders', 'delete_orders',
     'change_status', 'assign_master', 'view_finance', 'edit_finance',
-    'view_warranty', 'manage_parts', 'view_all'
+    'view_warranty', 'manage_parts', 'view_all', 'edit_repair',
+    'create_order', 'manage_device_types', 'view_clients'
   ],
   master: [
-    'view_orders', 'change_status', 'view_warranty'
+    'view_orders', 'change_status', 'view_warranty', 'edit_repair'
   ],
   accountant: [
-    'view_orders', 'view_finance', 'edit_finance', 'view_all'
+    'view_orders', 'view_finance', 'edit_finance', 'view_all', 'view_clients'
   ],
   warranty_manager: [
-    'view_orders', 'create_orders', 'edit_orders', 'change_status', 'view_warranty'
+    'view_orders', 'create_orders', 'edit_orders', 'change_status', 'view_warranty',
+    'create_order', 'view_clients'
   ],
   parts_manager: [
-    'view_orders', 'manage_parts', 'view_all'
+    'view_orders', 'manage_parts', 'view_all', 'view_clients'
   ],
   reception_manager: [
-    'view_orders', 'create_orders', 'edit_orders', 'change_status', 'assign_master'
+    'view_orders', 'create_orders', 'edit_orders', 'change_status', 'assign_master',
+    'create_order', 'manage_device_types', 'view_clients'
   ],
 };
 

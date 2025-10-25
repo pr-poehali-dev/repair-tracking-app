@@ -176,11 +176,70 @@ export function useOrders(user: User | null) {
     }
   };
 
+  const handleSaveRepairDescription = async (orderId: string, description: string, selectedOrder: Order | null, setSelectedOrder: (order: Order | null) => void) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    const now = new Date();
+    const timestamp = now.toLocaleString('ru-RU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const historyItem = {
+      timestamp,
+      action: 'Добавлено описание ремонта',
+      user: user?.fullName || 'Система',
+    };
+
+    const updatedOrder = {
+      ...order,
+      repairDescription: description,
+      history: [...order.history, historyItem],
+    };
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedOrder),
+      });
+
+      if (response.ok) {
+        const savedOrder = await response.json();
+        setOrders(prevOrders => 
+          prevOrders.map(o => o.id === orderId ? savedOrder : o)
+        );
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(savedOrder);
+        }
+      } else {
+        throw new Error('Ошибка обновления');
+      }
+    } catch (error) {
+      setOrders(prevOrders => 
+        prevOrders.map(o => o.id === orderId ? updatedOrder : o)
+      );
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(updatedOrder);
+      }
+      toast({
+        title: 'Описание сохранено локально',
+        description: 'Изменения не сохранены в базе данных',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return {
     orders,
     isLoading,
     handleCreateOrder,
     handleStatusChange,
+    handleSaveRepairDescription,
     loadOrders,
   };
 }

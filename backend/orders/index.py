@@ -65,6 +65,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         o.price,
                         o.master,
                         o.history,
+                        o.repair_description as "repairDescription",
                         TO_CHAR(o.status_deadline, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusDeadline",
                         TO_CHAR(o.status_changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusChangedAt",
                         o.is_overdue as "isOverdue"
@@ -94,6 +95,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         price,
                         master,
                         history,
+                        repair_description as "repairDescription",
                         TO_CHAR(status_deadline, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusDeadline",
                         TO_CHAR(status_changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusChangedAt",
                         is_overdue as "isOverdue"
@@ -198,6 +200,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     status = %s,
                     master = %s,
                     history = %s,
+                    repair_description = %s,
                     status_deadline = %s,
                     status_changed_at = NOW(),
                     is_overdue = (CASE WHEN %s::timestamp IS NOT NULL AND NOW() > %s::timestamp THEN true ELSE false END),
@@ -222,6 +225,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     price,
                     master,
                     history,
+                    repair_description as "repairDescription",
                     TO_CHAR(status_deadline, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusDeadline",
                     TO_CHAR(status_changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusChangedAt",
                     is_overdue as "isOverdue"
@@ -229,6 +233,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 new_status,
                 body_data.get('master'),
                 json.dumps(body_data['history']),
+                body_data.get('repairDescription'),
                 status_deadline,
                 status_deadline,
                 status_deadline,

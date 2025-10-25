@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import AssignUserDialog from '@/components/AssignUserDialog';
@@ -48,6 +49,7 @@ interface Order {
   createdTime: string;
   price?: number;
   master?: string;
+  repairDescription?: string;
 }
 
 interface OrderCardProps {
@@ -70,8 +72,25 @@ export default function OrderCard({
   getNextStatus,
 }: OrderCardProps) {
   const { hasPermission } = useAuth();
+  const { toast } = useToast();
   const [isAssignUserOpen, setIsAssignUserOpen] = useState(false);
   const nextStatus = getNextStatus(order.status);
+
+  const requiresRepairDescription = (status: OrderStatus) => {
+    return ['notify-client', 'client-notified', 'issued', 'stuck', 'disposal'].includes(status);
+  };
+
+  const handleStatusChange = (newStatus: OrderStatus) => {
+    if (requiresRepairDescription(newStatus) && !order.repairDescription) {
+      toast({
+        title: 'Требуется описание ремонта',
+        description: 'Перед переводом в этот статус необходимо заполнить описание выполненного ремонта',
+        variant: 'destructive',
+      });
+      return;
+    }
+    onStatusChange(order.id, newStatus);
+  };
 
   return (
     <>
@@ -137,19 +156,23 @@ export default function OrderCard({
               <Icon name="FileText" size={16} />
             </Button>
             {hasPermission('change_status') && (
-              <Select value={order.status} onValueChange={(value) => onStatusChange(order.id, value as OrderStatus)}>
+              <Select value={order.status} onValueChange={(value) => handleStatusChange(value as OrderStatus)}>
                 <SelectTrigger className="h-9 w-9 p-0">
                   <Icon name="RefreshCw" size={16} />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(statusConfig).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
-                        {config.label}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {Object.entries(statusConfig).map(([key, config]) => {
+                    const isDisabled = requiresRepairDescription(key as OrderStatus) && !order.repairDescription;
+                    return (
+                      <SelectItem key={key} value={key} disabled={isDisabled}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
+                          {config.label}
+                          {isDisabled && <Icon name="Lock" size={12} className="ml-1 text-muted-foreground" />}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             )}

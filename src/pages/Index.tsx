@@ -32,7 +32,7 @@ export default function Index() {
   const [isDeviceTypesOpen, setIsDeviceTypesOpen] = useState(false);
   const [isClientsSearchOpen, setIsClientsSearchOpen] = useState(false);
 
-  const { orders, isLoading, handleCreateOrder, handleStatusChange } = useOrders(user);
+  const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
 
   const filteredOrders = filterOrders(orders, searchQuery);
   const stats = calculateStats(orders);
@@ -44,6 +44,10 @@ export default function Index() {
 
   const onStatusChange = (orderId: string, newStatus: any) => {
     handleStatusChange(orderId, newStatus, selectedOrder, setSelectedOrder);
+  };
+
+  const onSaveRepairDescription = (orderId: string, description: string) => {
+    handleSaveRepairDescription(orderId, description, selectedOrder, setSelectedOrder);
   };
 
   if (isLoading) {
@@ -155,6 +159,7 @@ export default function Index() {
         statusConfig={statusConfig}
         priorityConfig={priorityConfig}
         onStatusChange={onStatusChange}
+        onSaveRepairDescription={onSaveRepairDescription}
       />
 
       <ReceiptDialog order={receiptOrder} onClose={() => setReceiptOrder(null)} />

@@ -16,8 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import AssignUserDialog from '@/components/AssignUserDialog';
+import RepairDescriptionDialog from '@/components/RepairDescriptionDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 export type OrderStatus = 
@@ -62,6 +64,7 @@ interface Order {
   createdTime: string;
   price?: number;
   master?: string;
+  repairDescription?: string;
   history: OrderHistoryItem[];
 }
 
@@ -72,6 +75,7 @@ interface OrderDetailsDialogProps {
   statusConfig: Record<OrderStatus, { label: string; color: string }>;
   priorityConfig: Record<string, { label: string; color: string }>;
   onStatusChange?: (orderId: string, status: OrderStatus) => void;
+  onSaveRepairDescription?: (orderId: string, description: string) => void;
 }
 
 const repairTypeLabels = {
@@ -88,11 +92,42 @@ export default function OrderDetailsDialog({
   statusConfig,
   priorityConfig,
   onStatusChange,
+  onSaveRepairDescription,
 }: OrderDetailsDialogProps) {
   const { hasPermission } = useAuth();
+  const { toast } = useToast();
   const [isAssignUserOpen, setIsAssignUserOpen] = useState(false);
+  const [isRepairDescOpen, setIsRepairDescOpen] = useState(false);
 
   if (!order) return null;
+
+  const requiresRepairDescription = (status: OrderStatus) => {
+    return ['notify-client', 'client-notified', 'issued', 'stuck', 'disposal'].includes(status);
+  };
+
+  const handleStatusChange = (newStatus: OrderStatus) => {
+    if (requiresRepairDescription(newStatus) && !order.repairDescription) {
+      toast({
+        title: 'Требуется описание ремонта',
+        description: 'Перед переводом в этот статус необходимо заполнить описание выполненного ремонта',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (onStatusChange) {
+      onStatusChange(order.id, newStatus);
+    }
+  };
+
+  const handleSaveDescription = (description: string) => {
+    if (onSaveRepairDescription) {
+      onSaveRepairDescription(order.id, description);
+      toast({
+        title: 'Описание сохранено',
+        description: 'Описание ремонта успешно добавлено',
+      });
+    }
+  };
 
   return (
     <>
@@ -123,19 +158,23 @@ export default function OrderDetailsDialog({
                     {statusConfig[order.status].label}
                   </Badge>
                   {hasPermission('change_status') && onStatusChange && (
-                    <Select value={order.status} onValueChange={(value) => onStatusChange(order.id, value as OrderStatus)}>
+                    <Select value={order.status} onValueChange={(value) => handleStatusChange(value as OrderStatus)}>
                       <SelectTrigger className="w-[220px] h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(statusConfig).map(([key, config]) => (
-                          <SelectItem key={key} value={key}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
-                              {config.label}
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {Object.entries(statusConfig).map(([key, config]) => {
+                          const isDisabled = requiresRepairDescription(key as OrderStatus) && !order.repairDescription;
+                          return (
+                            <SelectItem key={key} value={key} disabled={isDisabled}>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
+                                {config.label}
+                                {isDisabled && <Icon name="Lock" size={12} className="ml-1 text-muted-foreground" />}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   )}
@@ -221,6 +260,34 @@ export default function OrderDetailsDialog({
               <p className="text-sm bg-muted p-3 rounded-md">{order.issue}</p>
             </div>
 
+            <Separator />
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Icon name="FileText" size={18} />
+                  Описание выполненного ремонта
+                </h3>
+                {hasPermission('edit_repair') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsRepairDescOpen(true)}
+                  >
+                    <Icon name={order.repairDescription ? "Edit" : "Plus"} size={16} className="mr-2" />
+                    {order.repairDescription ? 'Редактировать' : 'Добавить'}
+                  </Button>
+                )}
+              </div>
+              {order.repairDescription ? (
+                <p className="text-sm bg-green-50 border border-green-200 p-3 rounded-md whitespace-pre-wrap">{order.repairDescription}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                  Описание ремонта пока не добавлено. Необходимо заполнить перед завершением ремонта.
+                </p>
+              )}
+            </div>
+
             {order.master && (
               <>
                 <Separator />
@@ -287,6 +354,14 @@ export default function OrderDetailsDialog({
       orderId={order.id}
       isOpen={isAssignUserOpen}
       onClose={() => setIsAssignUserOpen(false)}
+    />
+
+    <RepairDescriptionDialog
+      isOpen={isRepairDescOpen}
+      onClose={() => setIsRepairDescOpen(false)}
+      onSave={handleSaveDescription}
+      currentDescription={order.repairDescription}
+      orderNumber={order.id}
     />
     </>
   );

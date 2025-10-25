@@ -25,6 +25,7 @@ export interface Order {
   createdTime: string;
   price?: number;
   master?: string;
+  repairDescription?: string;
   history: OrderHistoryItem[];
 }
 
