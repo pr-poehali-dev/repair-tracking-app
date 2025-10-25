@@ -1,457 +1,79 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth, roleLabels } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useToast } from '@/hooks/use-toast';
-import Icon from '@/components/ui/icon';
-import NewOrderDialog, { NewOrderFormData } from '@/components/NewOrderDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import NewOrderDialog from '@/components/NewOrderDialog';
 import ReceiptDialog from '@/components/ReceiptDialog';
 import OrderStats from '@/components/OrderStats';
-import OrderCard, { OrderStatus } from '@/components/OrderCard';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog';
 import KanbanBoard from '@/components/KanbanBoard';
-import RoleBadge from '@/components/RoleBadge';
 import DeviceTypesDialog from '@/components/DeviceTypesDialog';
 import ClientsSearchDialog from '@/components/ClientsSearchDialog';
-
-interface OrderHistoryItem {
-  timestamp: string;
-  action: string;
-  user: string;
-  details?: string;
-}
-
-interface Order {
-  id: string;
-  clientName: string;
-  clientAddress: string;
-  clientPhone: string;
-  deviceType: string;
-  deviceModel: string;
-  serialNumber: string;
-  issue: string;
-  appearance: string;
-  accessories: string;
-  status: OrderStatus;
-  priority: 'low' | 'medium' | 'high';
-  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
-  createdAt: string;
-  createdTime: string;
-  price?: number;
-  master?: string;
-  history: OrderHistoryItem[];
-}
-
-const API_URL = 'https://functions.poehali.dev/e9af1ae4-2b09-4ac1-a49a-bf1172ebfc8c';
-
-const mockOrders: Order[] = [
-  {
-    id: 'ORD-001',
-    clientName: 'Иванов Петр Сергеевич',
-    clientAddress: 'ул. Ленина, д. 25, кв. 14',
-    clientPhone: '+7 (912) 345-67-89',
-    deviceType: 'Стиральная машина',
-    deviceModel: 'Samsung WW70',
-    serialNumber: 'SN123456789',
-    issue: 'Не включается',
-    appearance: 'Хорошее состояние, без царапин',
-    accessories: 'Инструкция, гарантийный талон',
-    status: 'received',
-    priority: 'high',
-    repairType: 'paid',
-    createdAt: '2024-10-24',
-    createdTime: '10:30',
-    price: 2500,
-    history: [
-      { timestamp: '2024-10-24 10:30', action: 'Создан заказ', user: 'Сидорова М.' },
-    ],
-  },
-  {
-    id: 'ORD-002',
-    clientName: 'Сидорова Анна Ивановна',
-    clientAddress: 'пр. Победы, д. 102, кв. 5',
-    clientPhone: '+7 (923) 456-78-90',
-    deviceType: 'Холодильник',
-    deviceModel: 'LG GR-B489',
-    serialNumber: 'LG987654321',
-    issue: 'Не морозит',
-    appearance: 'Потертости на дверце',
-    accessories: 'Полки, ящики в комплекте',
-    status: 'diagnostics',
-    priority: 'medium',
-    repairType: 'warranty',
-    createdAt: '2024-10-23',
-    createdTime: '09:15',
-    price: 3500,
-    master: 'Петров А.',
-    history: [
-      { timestamp: '2024-10-23 09:15', action: 'Создан заказ', user: 'Сидорова М.' },
-      { timestamp: '2024-10-23 11:20', action: 'Переведен в работу', user: 'Петров А.', details: 'Назначен мастер' },
-    ],
-  },
-  {
-    id: 'ORD-003',
-    clientName: 'Козлов Сергей Петрович',
-    clientAddress: 'ул. Мира, д. 8, кв. 22',
-    clientPhone: '+7 (934) 567-89-01',
-    deviceType: 'Микроволновка',
-    deviceModel: 'Panasonic NN',
-    serialNumber: 'PN456789012',
-    issue: 'Не греет',
-    appearance: 'Отличное',
-    accessories: 'Поддон стеклянный',
-    status: 'client-notified',
-    priority: 'low',
-    repairType: 'cashless',
-    createdAt: '2024-10-22',
-    createdTime: '14:00',
-    price: 1800,
-    master: 'Иванов Д.',
-    history: [
-      { timestamp: '2024-10-22 14:00', action: 'Создан заказ', user: 'Сидорова М.' },
-      { timestamp: '2024-10-22 15:30', action: 'Переведен в работу', user: 'Иванов Д.', details: 'Назначен мастер' },
-      { timestamp: '2024-10-23 10:00', action: 'Ремонт завершен', user: 'Иванов Д.' },
-    ],
-  },
-];
-
-const statusConfig = {
-  received: { label: 'Принят в ремонт', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  diagnostics: { label: 'Диагностика', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  repair: { label: 'Ремонт', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  'parts-needed': { label: 'Требуется запчасть', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  'cost-approval': { label: 'Согласование стоимости', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  'payment-pending': { label: 'Ожидание оплаты', color: 'bg-red-100 text-red-700 border-red-200' },
-  'parts-delivery': { label: 'Ожидание поставки', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-  'parts-arrived': { label: 'Запчасть поступила', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
-  'repair-continues': { label: 'Ремонт продолжается', color: 'bg-lime-100 text-lime-700 border-lime-200' },
-  'repair-completed': { label: 'Ремонт завершён', color: 'bg-green-100 text-green-700 border-green-200' },
-  'notify-client': { label: 'Оповестить клиента', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-  'client-notified': { label: 'Клиент оповещён', color: 'bg-teal-100 text-teal-700 border-teal-200' },
-  issued: { label: 'Техника выдана', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  stuck: { label: 'Зависшая техника', color: 'bg-rose-100 text-rose-700 border-rose-200' },
-  disposal: { label: 'Утилизация', color: 'bg-gray-100 text-gray-700 border-gray-200' },
-};
-
-const priorityConfig = {
-  low: { label: 'Низкий', color: 'bg-slate-100 text-slate-700' },
-  medium: { label: 'Средний', color: 'bg-blue-100 text-blue-700' },
-  high: { label: 'Высокий', color: 'bg-orange-100 text-orange-700' },
-};
+import AppHeader from '@/components/AppHeader';
+import OrderList from '@/components/OrderList';
+import Icon from '@/components/ui/icon';
+import { useOrders } from '@/hooks/useOrders';
+import { 
+  Order, 
+  statusConfig, 
+  priorityConfig, 
+  getNextStatus, 
+  calculateStats, 
+  filterOrders 
+} from '@/lib/orderUtils';
 
 export default function Index() {
-  const { user, logout, hasPermission, hasRole } = useAuth();
-  const { toast } = useToast();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { user, hasPermission } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDeviceTypesOpen, setIsDeviceTypesOpen] = useState(false);
   const [isClientsSearchOpen, setIsClientsSearchOpen] = useState(false);
 
-  useEffect(() => {
-    loadOrders();
-  }, [user]);
+  const { orders, isLoading, handleCreateOrder, handleStatusChange } = useOrders(user);
 
-  const loadOrders = async () => {
-    try {
-      setIsLoading(true);
-      const headers: HeadersInit = {};
-      
-      if (user?.id) {
-        headers['X-User-Id'] = user.id;
-      }
-      
-      const response = await fetch(API_URL, { headers });
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data);
-      } else {
-        setOrders(mockOrders);
-      }
-    } catch (error) {
-      console.error('Ошибка загрузки заказов:', error);
-      setOrders(mockOrders);
-      toast({
-        title: 'Ошибка загрузки',
-        description: 'Используются тестовые данные',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const filteredOrders = filterOrders(orders, searchQuery);
+  const stats = calculateStats(orders);
+
+  const onCreateOrder = async (formData: any) => {
+    const newOrder = await handleCreateOrder(formData);
+    setReceiptOrder(newOrder);
   };
 
-  const handleCreateOrder = async (formData: NewOrderFormData) => {
-    const maxOrderNumber = orders.reduce((max, order) => {
-      const num = parseInt(order.id.replace('ORD-', ''));
-      return num > max ? num : max;
-    }, 0);
-    
-    const newOrderId = `ORD-${String(maxOrderNumber + 1).padStart(3, '0')}`;
-    const now = new Date();
-    const timestamp = now.toLocaleString('ru-RU', { 
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit'
-    });
-    const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    const date = now.toLocaleDateString('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    
-    const newOrder: Order = {
-      id: newOrderId,
-      ...formData,
-      status: 'received',
-      createdAt: date,
-      createdTime: time,
-      history: [
-        {
-          timestamp,
-          action: 'Создан заказ',
-          user: user?.fullName || 'Система',
-        },
-      ],
-    };
-    
-    try {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (user?.id) {
-        headers['X-User-Id'] = user.id;
-      }
-      
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(newOrder),
-      });
-      
-      if (response.ok) {
-        const savedOrder = await response.json();
-        setOrders(prev => [savedOrder, ...prev]);
-        toast({
-          title: 'Заказ создан',
-          description: `Заказ ${newOrderId} сохранен в базе данных`,
-        });
-        setReceiptOrder(savedOrder);
-      } else {
-        throw new Error('Ошибка сохранения');
-      }
-    } catch (error) {
-      setOrders(prev => [newOrder, ...prev]);
-      toast({
-        title: 'Заказ создан локально',
-        description: `Заказ ${newOrderId} добавлен (не сохранен в БД)`,
-        variant: 'destructive',
-      });
-      setReceiptOrder(newOrder);
-    }
+  const onStatusChange = (orderId: string, newStatus: any) => {
+    handleStatusChange(orderId, newStatus, selectedOrder, setSelectedOrder);
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    const historyItem: OrderHistoryItem = {
-      timestamp: new Date().toLocaleString('ru-RU', { 
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit'
-      }),
-      action: `Переведен в статус: ${statusConfig[newStatus].label}`,
-      user: user?.fullName || 'Система',
-    };
-
-    const updatedOrder = { 
-      ...order, 
-      status: newStatus,
-      history: [...order.history, historyItem]
-    };
-
-    if ((newStatus === 'diagnostics' || newStatus === 'repair') && !order.master && user) {
-      updatedOrder.master = user.fullName;
-      historyItem.details = 'Назначен мастер';
-    }
-
-    try {
-      const response = await fetch(API_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedOrder),
-      });
-
-      if (response.ok) {
-        const savedOrder = await response.json();
-        setOrders(prevOrders => 
-          prevOrders.map(o => o.id === orderId ? savedOrder : o)
-        );
-        if (selectedOrder?.id === orderId) {
-          setSelectedOrder(savedOrder);
-        }
-      } else {
-        throw new Error('Ошибка обновления');
-      }
-    } catch (error) {
-      setOrders(prevOrders => 
-        prevOrders.map(o => o.id === orderId ? updatedOrder : o)
-      );
-      if (selectedOrder?.id === orderId) {
-        setSelectedOrder(updatedOrder);
-      }
-      toast({
-        title: 'Статус обновлен локально',
-        description: 'Изменения не сохранены в базе данных',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const filteredOrders = orders.filter(
-    (order) =>
-      order.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.deviceType.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const stats = {
-    total: orders.length,
-    received: orders.filter((o) => o.status === 'received').length,
-    inProgress: orders.filter((o) => ['diagnostics', 'repair', 'repair-continues'].includes(o.status)).length,
-    ready: orders.filter((o) => ['repair-completed', 'notify-client', 'client-notified'].includes(o.status)).length,
-    completed: orders.filter((o) => o.status === 'issued').length,
-    revenue: orders.reduce((sum, o) => sum + (o.price || 0), 0),
-  };
-
-  const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {
-    const statusFlow: Record<OrderStatus, OrderStatus | null> = {
-      'received': 'diagnostics',
-      'diagnostics': 'repair',
-      'repair': 'repair-completed',
-      'parts-needed': 'cost-approval',
-      'cost-approval': 'payment-pending',
-      'payment-pending': 'parts-delivery',
-      'parts-delivery': 'parts-arrived',
-      'parts-arrived': 'repair-continues',
-      'repair-continues': 'repair-completed',
-      'repair-completed': 'notify-client',
-      'notify-client': 'client-notified',
-      'client-notified': 'issued',
-      'issued': null,
-      'stuck': null,
-      'disposal': null,
-    };
-    return statusFlow[currentStatus];
-  };
-
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                <Icon name="Wrench" className="text-white" size={20} />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  CRM Мастерская
-                </h1>
-                <p className="text-xs text-muted-foreground">Управление заказами</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onNewOrder={() => setIsNewOrderOpen(true)}
+        onDeviceTypes={() => setIsDeviceTypesOpen(true)}
+        onClientsSearch={() => setIsClientsSearchOpen(true)}
+      />
 
-            <div className="flex items-center gap-4">
-              {hasPermission('create_orders') && (
-                <Button onClick={() => setIsNewOrderOpen(true)}>
-                  <Icon name="Plus" className="mr-2" size={18} />
-                  Новый заказ
-                </Button>
-              )}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar>
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
-                        {user ? getUserInitials(user.fullName) : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-2">
-                      <p className="text-sm font-medium">{user?.fullName}</p>
-                      {user?.role && <RoleBadge role={user.role} />}
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setIsClientsSearchOpen(true)}>
-                    <Icon name="Users" className="mr-2" size={16} />
-                    База клиентов
-                  </DropdownMenuItem>
-                  {hasRole('director') && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setIsDeviceTypesOpen(true)}>
-                        <Icon name="Settings" className="mr-2" size={16} />
-                        Справочник техники
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>
-                    <Icon name="LogOut" className="mr-2" size={16} />
-                    Выйти
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <OrderStats stats={stats} />
-
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Icon name="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input
-              placeholder="Поиск по клиенту, заказу или устройству..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="w-auto">
+      <main className="max-w-7xl mx-auto p-4 space-y-6">
+        <div className="flex items-center justify-between">
+          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="flex-1">
             <TabsList>
               <TabsTrigger value="dashboard">
                 <Icon name="LayoutDashboard" size={16} className="mr-2" />
                 Дашборд
               </TabsTrigger>
               <TabsTrigger value="kanban">
-                <Icon name="Columns3" size={16} className="mr-2" />
+                <Icon name="Trello" size={16} className="mr-2" />
                 Канбан
               </TabsTrigger>
               <TabsTrigger value="list">
@@ -462,22 +84,40 @@ export default function Index() {
           </Tabs>
         </div>
 
-        <Tabs value={activeView} className="space-y-4">
-          <TabsContent value="dashboard" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredOrders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  statusConfig={statusConfig}
-                  priorityConfig={priorityConfig}
+        <Tabs value={activeView} className="space-y-6">
+          <TabsContent value="dashboard" className="space-y-6">
+            <OrderStats
+              total={stats.total}
+              received={stats.received}
+              inProgress={stats.inProgress}
+              ready={stats.ready}
+              completed={stats.completed}
+              revenue={stats.revenue}
+            />
+
+            {filteredOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <p className="text-lg">Заказы не найдены</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">Последние заказы</h2>
+                <OrderList
+                  orders={filteredOrders.slice(0, 6)}
                   onViewDetails={setSelectedOrder}
                   onViewReceipt={setReceiptOrder}
-                  onStatusChange={handleStatusChange}
+                  onStatusChange={onStatusChange}
                   getNextStatus={getNextStatus}
                 />
-              ))}
-            </div>
+                {filteredOrders.length > 6 && (
+                  <div className="flex justify-center pt-4">
+                    <Button variant="outline" onClick={() => setActiveView('list')}>
+                      Показать все ({filteredOrders.length})
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="kanban">
@@ -486,28 +126,27 @@ export default function Index() {
               statusConfig={statusConfig}
               priorityConfig={priorityConfig}
               onViewDetails={setSelectedOrder}
-              onStatusChange={handleStatusChange}
+              onStatusChange={onStatusChange}
             />
           </TabsContent>
 
-          <TabsContent value="list" className="space-y-4">
-            <div className="space-y-3">
-              {filteredOrders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  statusConfig={statusConfig}
-                  priorityConfig={priorityConfig}
-                  onViewDetails={setSelectedOrder}
-                  onViewReceipt={setReceiptOrder}
-                  onStatusChange={handleStatusChange}
-                  getNextStatus={getNextStatus}
-                />
-              ))}
-            </div>
+          <TabsContent value="list">
+            <OrderList
+              orders={filteredOrders}
+              onViewDetails={setSelectedOrder}
+              onViewReceipt={setReceiptOrder}
+              onStatusChange={onStatusChange}
+              getNextStatus={getNextStatus}
+            />
           </TabsContent>
         </Tabs>
       </main>
+
+      <NewOrderDialog
+        open={isNewOrderOpen}
+        onOpenChange={setIsNewOrderOpen}
+        onSubmit={onCreateOrder}
+      />
 
       <OrderDetailsDialog
         order={selectedOrder}
@@ -517,27 +156,11 @@ export default function Index() {
         priorityConfig={priorityConfig}
       />
 
-      <NewOrderDialog
-        open={isNewOrderOpen}
-        onOpenChange={setIsNewOrderOpen}
-        onSubmit={handleCreateOrder}
-      />
+      <ReceiptDialog order={receiptOrder} onClose={() => setReceiptOrder(null)} />
 
-      <ReceiptDialog
-        order={receiptOrder}
-        isOpen={!!receiptOrder}
-        onClose={() => setReceiptOrder(null)}
-      />
+      <DeviceTypesDialog open={isDeviceTypesOpen} onOpenChange={setIsDeviceTypesOpen} />
 
-      <DeviceTypesDialog
-        isOpen={isDeviceTypesOpen}
-        onClose={() => setIsDeviceTypesOpen(false)}
-      />
-
-      <ClientsSearchDialog
-        isOpen={isClientsSearchOpen}
-        onClose={() => setIsClientsSearchOpen(false)}
-      />
+      <ClientsSearchDialog open={isClientsSearchOpen} onOpenChange={setIsClientsSearchOpen} />
     </div>
   );
 }
