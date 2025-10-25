@@ -154,7 +154,7 @@ export default function Index() {
     return statusFlow[currentStatus];
   };
 
-  const OrderCard = ({ order }: { order: Order }) => {
+  const OrderCard = ({ order }: { order: Order }) => (
     <Card className="hover:shadow-md transition-shadow animate-fade-in cursor-pointer">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -205,7 +205,7 @@ export default function Index() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-background">
