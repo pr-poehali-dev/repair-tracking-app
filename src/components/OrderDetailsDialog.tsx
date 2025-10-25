@@ -1,0 +1,223 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import Icon from '@/components/ui/icon';
+
+export type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
+
+interface OrderHistoryItem {
+  timestamp: string;
+  action: string;
+  user: string;
+  details?: string;
+}
+
+interface Order {
+  id: string;
+  clientName: string;
+  clientAddress: string;
+  clientPhone: string;
+  deviceType: string;
+  deviceModel: string;
+  serialNumber: string;
+  issue: string;
+  appearance: string;
+  accessories: string;
+  status: OrderStatus;
+  priority: 'low' | 'medium' | 'high';
+  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
+  createdAt: string;
+  createdTime: string;
+  price?: number;
+  master?: string;
+  history: OrderHistoryItem[];
+}
+
+interface OrderDetailsDialogProps {
+  order: Order | null;
+  isOpen: boolean;
+  onClose: () => void;
+  statusConfig: Record<OrderStatus, { label: string; color: string }>;
+  priorityConfig: Record<string, { label: string; color: string }>;
+}
+
+const repairTypeLabels = {
+  warranty: 'Гарантийный',
+  repeat: 'Повторный',
+  paid: 'Платный',
+  cashless: 'Безнал',
+};
+
+export default function OrderDetailsDialog({
+  order,
+  isOpen,
+  onClose,
+  statusConfig,
+  priorityConfig,
+}: OrderDetailsDialogProps) {
+  if (!order) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>Детали заказа {order.id}</DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="h-[70vh] pr-4">
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <Badge className={statusConfig[order.status].color}>
+                  {statusConfig[order.status].label}
+                </Badge>
+                <Badge variant="outline" className={priorityConfig[order.priority].color}>
+                  {priorityConfig[order.priority].label}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Создан</p>
+                  <p className="font-medium">{order.createdAt} в {order.createdTime}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Вид ремонта</p>
+                  <p className="font-medium">{repairTypeLabels[order.repairType]}</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Icon name="User" size={18} />
+                Информация о клиенте
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">ФИО</p>
+                  <p className="font-medium">{order.clientName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Адрес</p>
+                  <p className="font-medium">{order.clientAddress}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Телефон</p>
+                  <p className="font-medium">{order.clientPhone}</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Icon name="Smartphone" size={18} />
+                Информация об устройстве
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Тип устройства</p>
+                  <p className="font-medium">{order.deviceType}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Модель</p>
+                  <p className="font-medium">{order.deviceModel}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Серийный номер</p>
+                  <p className="font-medium">{order.serialNumber}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Внешний вид</p>
+                  <p className="font-medium">{order.appearance}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Комплектация</p>
+                  <p className="font-medium">{order.accessories}</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Icon name="AlertCircle" size={18} />
+                Проблема
+              </h3>
+              <p className="text-sm bg-muted p-3 rounded-md">{order.issue}</p>
+            </div>
+
+            {order.master && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Icon name="Wrench" size={18} />
+                    Мастер
+                  </h3>
+                  <p className="text-sm font-medium">{order.master}</p>
+                </div>
+              </>
+            )}
+
+            {order.price && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Icon name="Wallet" size={18} />
+                    Стоимость
+                  </h3>
+                  <p className="text-2xl font-bold text-green-600">
+                    {order.price.toLocaleString()} ₽
+                  </p>
+                </div>
+              </>
+            )}
+
+            <Separator />
+
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Icon name="History" size={18} />
+                История изменений
+              </h3>
+              <div className="space-y-3">
+                {order.history.map((item, index) => (
+                  <div key={index} className="flex gap-3 text-sm">
+                    <div className="flex flex-col items-center">
+                      <div className="h-2 w-2 rounded-full bg-primary mt-1.5" />
+                      {index < order.history.length - 1 && (
+                        <div className="w-px h-full bg-border mt-1" />
+                      )}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <p className="font-medium">{item.action}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {item.timestamp} • {item.user}
+                      </p>
+                      {item.details && (
+                        <p className="text-muted-foreground text-xs mt-1">{item.details}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,20 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import NewOrderDialog, { NewOrderFormData } from '@/components/NewOrderDialog';
 import ReceiptDialog from '@/components/ReceiptDialog';
-
-type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
+import OrderStats from '@/components/OrderStats';
+import OrderCard, { OrderStatus } from '@/components/OrderCard';
+import OrderDetailsDialog from '@/components/OrderDetailsDialog';
+import KanbanBoard from '@/components/KanbanBoard';
 
 interface OrderHistoryItem {
   timestamp: string;
@@ -249,116 +241,58 @@ export default function Index() {
     return statusFlow[currentStatus];
   };
 
-  const OrderCard = ({ order }: { order: Order }) => (
-    <Card className="hover:shadow-md transition-shadow animate-fade-in cursor-pointer" onClick={() => setSelectedOrder(order)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-base font-semibold">{order.id}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{order.clientName}</p>
-          </div>
-          <Badge className={priorityConfig[order.priority].color} variant="outline">
-            {priorityConfig[order.priority].label}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="flex items-center gap-2 text-sm">
-          <Icon name="Smartphone" size={16} className="text-muted-foreground" />
-          <span className="font-medium">{order.deviceType}</span>
-          <span className="text-muted-foreground">({order.deviceModel})</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Icon name="AlertCircle" size={16} />
-          <span>{order.issue}</span>
-        </div>
-        {order.master && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Icon name="User" size={16} />
-            <span>{order.master}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between pt-2">
-          <Badge className={statusConfig[order.status].color} variant="outline">
-            {statusConfig[order.status].label}
-          </Badge>
-          {order.price && <span className="font-semibold text-primary">{order.price} ₽</span>}
-        </div>
-        
-        <div className="pt-2 border-t mt-2 grid grid-cols-2 gap-2">
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="gap-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              setReceiptOrder(order);
-            }}
-          >
-            <Icon name="Printer" size={14} />
-            Квитанция
-          </Button>
-          
-          {getNextStatus(order.status) && (
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="gap-1"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleStatusChange(order.id, getNextStatus(order.status)!);
-              }}
-            >
-              <Icon name="ArrowRight" size={14} />
-              {statusConfig[getNextStatus(order.status)!].label}
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-6 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-primary p-2 rounded-lg">
-                <Icon name="Wrench" size={24} className="text-primary-foreground" />
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                <Icon name="Wrench" className="text-white" size={20} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Мастерская</h1>
-                <p className="text-sm text-muted-foreground">Система учёта ремонтов</p>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  CRM Мастерская
+                </h1>
+                <p className="text-xs text-muted-foreground">Управление заказами</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button className="gap-2" onClick={() => setIsNewOrderOpen(true)}>
-                <Icon name="Plus" size={18} />
+
+            <div className="flex items-center gap-4">
+              <Button onClick={() => setIsNewOrderOpen(true)}>
+                <Icon name="Plus" className="mr-2" size={18} />
                 Новый заказ
               </Button>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 relative h-10">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {user?.fullName.split(' ').map(n => n[0]).join('')}
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar>
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                        {user ? getUserInitials(user.fullName) : 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden md:inline">{user?.fullName}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end">
                   <DropdownMenuLabel>
-                    <div>
-                      <p className="font-semibold">{user?.fullName}</p>
-                      <p className="text-xs text-muted-foreground">@{user?.username}</p>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{user?.fullName}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-destructive gap-2">
-                    <Icon name="LogOut" size={16} />
+                  <DropdownMenuItem onClick={logout}>
+                    <Icon name="LogOut" className="mr-2" size={16} />
                     Выйти
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -366,312 +300,94 @@ export default function Index() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-6 py-6">
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="space-y-6">
-          <div className="flex items-center justify-between">
+      <main className="container mx-auto px-4 py-8">
+        <OrderStats stats={stats} />
+
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Icon name="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+            <Input
+              placeholder="Поиск по клиенту, заказу или устройству..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="w-auto">
             <TabsList>
-              <TabsTrigger value="dashboard" className="gap-2">
-                <Icon name="LayoutDashboard" size={16} />
+              <TabsTrigger value="dashboard">
+                <Icon name="LayoutDashboard" size={16} className="mr-2" />
                 Дашборд
               </TabsTrigger>
-              <TabsTrigger value="kanban" className="gap-2">
-                <Icon name="Columns3" size={16} />
+              <TabsTrigger value="kanban">
+                <Icon name="Columns3" size={16} className="mr-2" />
                 Канбан
               </TabsTrigger>
-              <TabsTrigger value="list" className="gap-2">
-                <Icon name="List" size={16} />
+              <TabsTrigger value="list">
+                <Icon name="List" size={16} className="mr-2" />
                 Список
               </TabsTrigger>
             </TabsList>
+          </Tabs>
+        </div>
 
-            <div className="relative w-80">
-              <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Поиск по клиенту, заказу, технике..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="animate-scale-in">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Всего заказов</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">{stats.total}</div>
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <Icon name="FileText" size={24} className="text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">В работе</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">{stats.inProgress}</div>
-                    <div className="bg-yellow-100 p-3 rounded-lg">
-                      <Icon name="Hammer" size={24} className="text-yellow-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="animate-scale-in" style={{ animationDelay: '0.2s' }}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Готово к выдаче</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">{stats.ready}</div>
-                    <div className="bg-green-100 p-3 rounded-lg">
-                      <Icon name="CheckCircle" size={24} className="text-green-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="animate-scale-in" style={{ animationDelay: '0.3s' }}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Выручка</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">{stats.revenue.toLocaleString()} ₽</div>
-                    <div className="bg-secondary/20 p-3 rounded-lg">
-                      <Icon name="TrendingUp" size={24} className="text-secondary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Последние заказы</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredOrders.slice(0, 6).map((order) => (
-                  <OrderCard key={order.id} order={order} />
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="kanban" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {(['received', 'in-progress', 'ready', 'completed'] as OrderStatus[]).map((status) => (
-                <div key={status} className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
-                    <h3 className="font-semibold">{statusConfig[status].label}</h3>
-                    <Badge variant="secondary">{filteredOrders.filter((o) => o.status === status).length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {filteredOrders
-                      .filter((o) => o.status === status)
-                      .map((order) => (
-                        <OrderCard key={order.id} order={order} />
-                      ))}
-                  </div>
-                </div>
+        <Tabs value={activeView} className="space-y-4">
+          <TabsContent value="dashboard" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  statusConfig={statusConfig}
+                  priorityConfig={priorityConfig}
+                  onViewDetails={setSelectedOrder}
+                  onViewReceipt={setReceiptOrder}
+                  onStatusChange={handleStatusChange}
+                  getNextStatus={getNextStatus}
+                />
               ))}
             </div>
           </TabsContent>
 
+          <TabsContent value="kanban">
+            <KanbanBoard
+              orders={filteredOrders}
+              statusConfig={statusConfig}
+              priorityConfig={priorityConfig}
+              onViewDetails={setSelectedOrder}
+              onStatusChange={handleStatusChange}
+            />
+          </TabsContent>
+
           <TabsContent value="list" className="space-y-4">
-            <Card>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b bg-muted/50">
-                      <tr>
-                        <th className="text-left p-4 font-semibold">Заказ</th>
-                        <th className="text-left p-4 font-semibold">Клиент</th>
-                        <th className="text-left p-4 font-semibold">Техника</th>
-                        <th className="text-left p-4 font-semibold">Проблема</th>
-                        <th className="text-left p-4 font-semibold">Статус</th>
-                        <th className="text-left p-4 font-semibold">Приоритет</th>
-                        <th className="text-left p-4 font-semibold">Цена</th>
-                        <th className="text-left p-4 font-semibold">Мастер</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredOrders.map((order) => (
-                        <tr key={order.id} className="border-b hover:bg-muted/30 transition-colors cursor-pointer">
-                          <td className="p-4 font-medium">{order.id}</td>
-                          <td className="p-4">{order.clientName}</td>
-                          <td className="p-4">
-                            <div className="text-sm">
-                              <div className="font-medium">{order.deviceType}</div>
-                              <div className="text-muted-foreground">{order.deviceModel}</div>
-                            </div>
-                          </td>
-                          <td className="p-4 text-sm">{order.issue}</td>
-                          <td className="p-4">
-                            <Badge className={statusConfig[order.status].color} variant="outline">
-                              {statusConfig[order.status].label}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <Badge className={priorityConfig[order.priority].color} variant="outline">
-                              {priorityConfig[order.priority].label}
-                            </Badge>
-                          </td>
-                          <td className="p-4 font-semibold text-primary">{order.price ? `${order.price} ₽` : '—'}</td>
-                          <td className="p-4 text-sm">{order.master || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  statusConfig={statusConfig}
+                  priorityConfig={priorityConfig}
+                  onViewDetails={setSelectedOrder}
+                  onViewReceipt={setReceiptOrder}
+                  onStatusChange={handleStatusChange}
+                  getNextStatus={getNextStatus}
+                />
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
 
-      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <Icon name="FileText" size={20} className="text-primary" />
-              </div>
-              <div>
-                <div className="font-bold">{selectedOrder?.id}</div>
-                <div className="text-sm font-normal text-muted-foreground">{selectedOrder?.clientName}</div>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
-
-          <ScrollArea className="max-h-[calc(90vh-120px)]">
-            <div className="space-y-6 pr-4">
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Icon name="User" size={18} className="text-primary" />
-                  Клиент
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">ФИО</p>
-                    <p className="font-medium">{selectedOrder?.clientName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Телефон</p>
-                    <p className="font-medium">{selectedOrder?.clientPhone || '—'}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Адрес</p>
-                    <p className="font-medium">{selectedOrder?.clientAddress || '—'}</p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Icon name="Smartphone" size={18} className="text-primary" />
-                  Техника
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Вид</p>
-                    <p className="font-semibold">{selectedOrder?.deviceType}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Модель</p>
-                    <p className="font-medium">{selectedOrder?.deviceModel || '—'}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Серийный номер</p>
-                    <p className="font-medium">{selectedOrder?.serialNumber || '—'}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Внешний вид</p>
-                    <p className="text-sm">{selectedOrder?.appearance || '—'}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Комплектация</p>
-                    <p className="text-sm">{selectedOrder?.accessories || '—'}</p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Icon name="AlertCircle" size={18} className="text-primary" />
-                  Неисправность
-                </h3>
-                <p className="text-sm">{selectedOrder?.issue}</p>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Статус</p>
-                  <Badge className={selectedOrder ? statusConfig[selectedOrder.status].color : ''} variant="outline">
-                    {selectedOrder ? statusConfig[selectedOrder.status].label : ''}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Приоритет</p>
-                  <Badge className={selectedOrder ? priorityConfig[selectedOrder.priority].color : ''} variant="outline">
-                    {selectedOrder ? priorityConfig[selectedOrder.priority].label : ''}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Мастер</p>
-                  <p className="font-medium">{selectedOrder?.master || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Стоимость</p>
-                  <p className="font-semibold text-primary">{selectedOrder?.price ? `${selectedOrder.price} ₽` : '—'}</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Icon name="History" size={18} className="text-primary" />
-                  <h3 className="font-semibold">История изменений</h3>
-                </div>
-                <div className="space-y-3">
-                  {selectedOrder?.history.map((item, index) => (
-                    <div key={index} className="flex gap-3 pb-3 border-b last:border-0">
-                      <div className="bg-primary/10 p-2 rounded-full h-fit">
-                        <Icon name="Clock" size={14} className="text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-1">
-                          <p className="font-medium">{item.action}</p>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">{item.timestamp}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {item.user}
-                          {item.details && <span className="ml-1">• {item.details}</span>}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <OrderDetailsDialog
+        order={selectedOrder}
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        statusConfig={statusConfig}
+        priorityConfig={priorityConfig}
+      />
 
       <NewOrderDialog
         open={isNewOrderOpen}
@@ -680,9 +396,9 @@ export default function Index() {
       />
 
       <ReceiptDialog
-        open={!!receiptOrder}
-        onOpenChange={() => setReceiptOrder(null)}
         order={receiptOrder}
+        isOpen={!!receiptOrder}
+        onClose={() => setReceiptOrder(null)}
       />
     </div>
   );
