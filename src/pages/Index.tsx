@@ -107,9 +107,26 @@ const priorityConfig = {
 
 export default function Index() {
   const { user, logout } = useAuth();
-  const [orders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
+
+  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => {
+        if (order.id === orderId) {
+          const updatedOrder = { ...order, status: newStatus };
+          
+          if (newStatus === 'in-progress' && !order.master && user) {
+            updatedOrder.master = user.fullName;
+          }
+          
+          return updatedOrder;
+        }
+        return order;
+      })
+    );
+  };
 
   const filteredOrders = orders.filter(
     (order) =>
@@ -127,7 +144,17 @@ export default function Index() {
     revenue: orders.reduce((sum, o) => sum + (o.price || 0), 0),
   };
 
-  const OrderCard = ({ order }: { order: Order }) => (
+  const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {
+    const statusFlow: Record<OrderStatus, OrderStatus | null> = {
+      'received': 'in-progress',
+      'in-progress': 'ready',
+      'ready': 'completed',
+      'completed': null,
+    };
+    return statusFlow[currentStatus];
+  };
+
+  const OrderCard = ({ order }: { order: Order }) => {
     <Card className="hover:shadow-md transition-shadow animate-fade-in cursor-pointer">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -162,9 +189,23 @@ export default function Index() {
           </Badge>
           {order.price && <span className="font-semibold text-primary">{order.price} ₽</span>}
         </div>
+        
+        {getNextStatus(order.status) && (
+          <div className="pt-2 border-t mt-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="w-full gap-2"
+              onClick={() => handleStatusChange(order.id, getNextStatus(order.status)!)}
+            >
+              <Icon name="ArrowRight" size={14} />
+              {statusConfig[getNextStatus(order.status)!].label}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
-  );
+  )
 
   return (
     <div className="min-h-screen bg-background">
