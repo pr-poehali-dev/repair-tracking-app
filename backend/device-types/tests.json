@@ -13,6 +13,23 @@
       "path": "/?category=Электроника",
       "expectedStatus": 200,
       "bodyMatcher": "type"
+    },
+    {
+      "name": "Add device type as director",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Role": "director"
+      },
+      "body": {
+        "name": "Тестовое устройство",
+        "category": "Тестовая категория"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "name": "Тестовое устройство"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

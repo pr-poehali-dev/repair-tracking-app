@@ -21,6 +21,7 @@ import OrderCard, { OrderStatus } from '@/components/OrderCard';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog';
 import KanbanBoard from '@/components/KanbanBoard';
 import RoleBadge from '@/components/RoleBadge';
+import DeviceTypesDialog from '@/components/DeviceTypesDialog';
 
 interface OrderHistoryItem {
   timestamp: string;
@@ -137,7 +138,7 @@ const priorityConfig = {
 };
 
 export default function Index() {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, hasPermission, hasRole } = useAuth();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,6 +147,7 @@ export default function Index() {
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeviceTypesOpen, setIsDeviceTypesOpen] = useState(false);
 
   useEffect(() => {
     loadOrders();
@@ -379,6 +381,15 @@ export default function Index() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {hasRole('director') && (
+                    <>
+                      <DropdownMenuItem onClick={() => setIsDeviceTypesOpen(true)}>
+                        <Icon name="Settings" className="mr-2" size={16} />
+                        Справочник техники
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={logout}>
                     <Icon name="LogOut" className="mr-2" size={16} />
                     Выйти
@@ -487,6 +498,11 @@ export default function Index() {
         order={receiptOrder}
         isOpen={!!receiptOrder}
         onClose={() => setReceiptOrder(null)}
+      />
+
+      <DeviceTypesDialog
+        isOpen={isDeviceTypesOpen}
+        onClose={() => setIsDeviceTypesOpen(false)}
       />
     </div>
   );
