@@ -149,12 +149,18 @@ export default function Index() {
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [user]);
 
   const loadOrders = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(API_URL);
+      const headers: HeadersInit = {};
+      
+      if (user?.id) {
+        headers['X-User-Id'] = user.id;
+      }
+      
+      const response = await fetch(API_URL, { headers });
       if (response.ok) {
         const data = await response.json();
         setOrders(data);
@@ -205,9 +211,14 @@ export default function Index() {
     };
     
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (user?.id) {
+        headers['X-User-Id'] = user.id;
+      }
+      
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(newOrder),
       });
       
