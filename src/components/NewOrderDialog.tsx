@@ -27,6 +27,7 @@ export interface NewOrderFormData {
   appearance: string;
   accessories: string;
   priority: 'low' | 'medium' | 'high';
+  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
 }
 
 export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrderDialogProps) {
@@ -42,6 +43,7 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
     appearance: '',
     accessories: '',
     priority: 'medium',
+    repairType: 'paid',
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof NewOrderFormData, string>>>({});
@@ -80,6 +82,7 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
         appearance: '',
         accessories: '',
         priority: 'medium',
+        repairType: 'paid',
       });
       setErrors({});
       onOpenChange(false);
@@ -231,18 +234,35 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
                     {errors.issue && <p className="text-xs text-destructive mt-1">{errors.issue}</p>}
                   </div>
 
-                  <div>
-                    <Label htmlFor="priority">Приоритет</Label>
-                    <Select value={formData.priority} onValueChange={(value: any) => handleChange('priority', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Низкий</SelectItem>
-                        <SelectItem value="medium">Средний</SelectItem>
-                        <SelectItem value="high">Высокий</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="repairType">Вид ремонта</Label>
+                      <Select value={formData.repairType} onValueChange={(value: any) => handleChange('repairType', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="warranty">Гарантийный</SelectItem>
+                          <SelectItem value="repeat">Повторный</SelectItem>
+                          <SelectItem value="paid">Платный</SelectItem>
+                          <SelectItem value="cashless">Безнал</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="priority">Приоритет</Label>
+                      <Select value={formData.priority} onValueChange={(value: any) => handleChange('priority', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Низкий</SelectItem>
+                          <SelectItem value="medium">Средний</SelectItem>
+                          <SelectItem value="high">Высокий</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>

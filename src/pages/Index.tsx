@@ -25,6 +25,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import NewOrderDialog, { NewOrderFormData } from '@/components/NewOrderDialog';
+import ReceiptDialog from '@/components/ReceiptDialog';
 
 type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
 
@@ -48,7 +49,9 @@ interface Order {
   accessories: string;
   status: OrderStatus;
   priority: 'low' | 'medium' | 'high';
+  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
   createdAt: string;
+  createdTime: string;
   price?: number;
   master?: string;
   history: OrderHistoryItem[];
@@ -68,7 +71,9 @@ const mockOrders: Order[] = [
     accessories: 'Инструкция, гарантийный талон',
     status: 'received',
     priority: 'high',
+    repairType: 'paid',
     createdAt: '2024-10-24',
+    createdTime: '10:30',
     price: 2500,
     history: [
       { timestamp: '2024-10-24 10:30', action: 'Создан заказ', user: 'Сидорова М.' },
@@ -87,7 +92,9 @@ const mockOrders: Order[] = [
     accessories: 'Полки, ящики в комплекте',
     status: 'in-progress',
     priority: 'medium',
+    repairType: 'warranty',
     createdAt: '2024-10-23',
+    createdTime: '09:15',
     price: 3500,
     master: 'Петров А.',
     history: [
@@ -108,7 +115,9 @@ const mockOrders: Order[] = [
     accessories: 'Поддон стеклянный',
     status: 'ready',
     priority: 'low',
+    repairType: 'cashless',
     createdAt: '2024-10-22',
+    createdTime: '14:00',
     price: 1800,
     master: 'Иванов Д.',
     history: [
@@ -140,19 +149,29 @@ export default function Index() {
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
 
   const handleCreateOrder = (formData: NewOrderFormData) => {
-    const newOrderId = `ORD-${String(orders.length + 1).padStart(3, '0')}`;
-    const timestamp = new Date().toLocaleString('ru-RU', { 
+    const maxOrderNumber = orders.reduce((max, order) => {
+      const num = parseInt(order.id.replace('ORD-', ''));
+      return num > max ? num : max;
+    }, 0);
+    
+    const newOrderId = `ORD-${String(maxOrderNumber + 1).padStart(3, '0')}`;
+    const now = new Date();
+    const timestamp = now.toLocaleString('ru-RU', { 
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit'
     });
+    const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const date = now.toLocaleDateString('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit' });
     
     const newOrder: Order = {
       id: newOrderId,
       ...formData,
       status: 'received',
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: date,
+      createdTime: time,
       history: [
         {
           timestamp,
@@ -167,6 +186,8 @@ export default function Index() {
       title: 'Заказ создан',
       description: `Заказ ${newOrderId} успешно добавлен в систему`,
     });
+    
+    setReceiptOrder(newOrder);
   };
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
@@ -264,12 +285,25 @@ export default function Index() {
           {order.price && <span className="font-semibold text-primary">{order.price} ₽</span>}
         </div>
         
-        {getNextStatus(order.status) && (
-          <div className="pt-2 border-t mt-2">
+        <div className="pt-2 border-t mt-2 grid grid-cols-2 gap-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="gap-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              setReceiptOrder(order);
+            }}
+          >
+            <Icon name="Printer" size={14} />
+            Квитанция
+          </Button>
+          
+          {getNextStatus(order.status) && (
             <Button 
               size="sm" 
               variant="outline" 
-              className="w-full gap-2"
+              className="gap-1"
               onClick={(e) => {
                 e.stopPropagation();
                 handleStatusChange(order.id, getNextStatus(order.status)!);
@@ -278,8 +312,8 @@ export default function Index() {
               <Icon name="ArrowRight" size={14} />
               {statusConfig[getNextStatus(order.status)!].label}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -643,6 +677,12 @@ export default function Index() {
         open={isNewOrderOpen}
         onOpenChange={setIsNewOrderOpen}
         onSubmit={handleCreateOrder}
+      />
+
+      <ReceiptDialog
+        open={!!receiptOrder}
+        onOpenChange={() => setReceiptOrder(null)}
+        order={receiptOrder}
       />
     </div>
   );
