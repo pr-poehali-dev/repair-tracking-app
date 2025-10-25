@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,10 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import AssignUserDialog from '@/components/AssignUserDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
 
@@ -61,14 +65,30 @@ export default function OrderDetailsDialog({
   statusConfig,
   priorityConfig,
 }: OrderDetailsDialogProps) {
+  const { hasPermission } = useAuth();
+  const [isAssignUserOpen, setIsAssignUserOpen] = useState(false);
+
   if (!order) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>Детали заказа {order.id}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh]">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Детали заказа {order.id}</DialogTitle>
+              {hasPermission('assign_master') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAssignUserOpen(true)}
+                >
+                  <Icon name="UserPlus" size={16} className="mr-2" />
+                  Участники
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
 
         <ScrollArea className="h-[70vh] pr-4">
           <div className="space-y-6">
@@ -219,5 +239,12 @@ export default function OrderDetailsDialog({
         </ScrollArea>
       </DialogContent>
     </Dialog>
+
+    <AssignUserDialog
+      orderId={order.id}
+      isOpen={isAssignUserOpen}
+      onClose={() => setIsAssignUserOpen(false)}
+    />
+    </>
   );
 }

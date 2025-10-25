@@ -1,0 +1,26 @@
+{
+  "tests": [
+    {
+      "name": "Get order users",
+      "method": "GET",
+      "path": "/?orderId=ORD-TEST-001",
+      "expectedStatus": 200,
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Add user to order",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "orderId": "ORD-TEST-001",
+        "userId": "2",
+        "role": "assigned"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

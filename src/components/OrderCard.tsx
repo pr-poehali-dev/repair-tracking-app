@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
+import AssignUserDialog from '@/components/AssignUserDialog';
 
 export type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
 
@@ -46,6 +48,7 @@ export default function OrderCard({
   getNextStatus,
 }: OrderCardProps) {
   const { hasPermission } = useAuth();
+  const [isAssignUserOpen, setIsAssignUserOpen] = useState(false);
   const nextStatus = getNextStatus(order.status);
 
   return (
@@ -102,6 +105,11 @@ export default function OrderCard({
               <Icon name="Eye" size={16} className="mr-1" />
               Подробнее
             </Button>
+            {hasPermission('assign_master') && (
+              <Button variant="outline" size="sm" onClick={() => setIsAssignUserOpen(true)}>
+                <Icon name="Users" size={16} />
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => onViewReceipt(order)}>
               <Icon name="FileText" size={16} />
             </Button>
@@ -114,5 +122,11 @@ export default function OrderCard({
         </div>
       </CardContent>
     </Card>
+    
+    <AssignUserDialog
+      orderId={order.id}
+      isOpen={isAssignUserOpen}
+      onClose={() => setIsAssignUserOpen(false)}
+    />
   );
 }
