@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "Get all device types",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Get device types by category",
+      "method": "GET",
+      "path": "/?category=Электроника",
+      "expectedStatus": 200,
+      "bodyMatcher": "type"
+    }
+  ]
+}

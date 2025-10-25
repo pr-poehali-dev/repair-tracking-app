@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface DeviceType {
+  id: number;
+  name: string;
+  category: string;
+}
+
+const DEVICE_TYPES_API_URL = 'https://functions.poehali.dev/7e59e15a-4b6d-4147-8829-3060b4d82b31';
 
 interface NewOrderDialogProps {
   open: boolean;
@@ -32,6 +40,7 @@ export interface NewOrderFormData {
 
 export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrderDialogProps) {
   const { user } = useAuth();
+  const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
   const [formData, setFormData] = useState<NewOrderFormData>({
     clientName: '',
     clientAddress: '',
@@ -47,6 +56,24 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof NewOrderFormData, string>>>({});
+
+  useEffect(() => {
+    if (open) {
+      loadDeviceTypes();
+    }
+  }, [open]);
+
+  const loadDeviceTypes = async () => {
+    try {
+      const response = await fetch(DEVICE_TYPES_API_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setDeviceTypes(data);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки типов техники:', error);
+    }
+  };
 
   const handleChange = (field: keyof NewOrderFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -159,13 +186,21 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="deviceType">Вид техники <span className="text-destructive">*</span></Label>
-                    <Input
-                      id="deviceType"
-                      placeholder="Стиральная машина"
+                    <Select
                       value={formData.deviceType}
-                      onChange={(e) => handleChange('deviceType', e.target.value)}
-                      className={errors.deviceType ? 'border-destructive' : ''}
-                    />
+                      onValueChange={(value) => handleChange('deviceType', value)}
+                    >
+                      <SelectTrigger className={errors.deviceType ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Выберите вид техники" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deviceTypes.map((dt) => (
+                          <SelectItem key={dt.id} value={dt.name}>
+                            {dt.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {errors.deviceType && <p className="text-xs text-destructive mt-1">{errors.deviceType}</p>}
                   </div>
 
