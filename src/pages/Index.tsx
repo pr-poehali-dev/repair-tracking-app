@@ -4,6 +4,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import Icon from '@/components/ui/icon';
 
 type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
@@ -96,6 +106,7 @@ const priorityConfig = {
 };
 
 export default function Index() {
+  const { user, logout } = useAuth();
   const [orders] = useState<Order[]>(mockOrders);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
@@ -169,10 +180,38 @@ export default function Index() {
                 <p className="text-sm text-muted-foreground">Система учёта ремонтов</p>
               </div>
             </div>
-            <Button className="gap-2">
-              <Icon name="Plus" size={18} />
-              Новый заказ
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button className="gap-2">
+                <Icon name="Plus" size={18} />
+                Новый заказ
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2 relative h-10">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                        {user?.fullName.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:inline">{user?.fullName}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div>
+                      <p className="font-semibold">{user?.fullName}</p>
+                      <p className="text-xs text-muted-foreground">@{user?.username}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="text-destructive gap-2">
+                    <Icon name="LogOut" size={16} />
+                    Выйти
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
