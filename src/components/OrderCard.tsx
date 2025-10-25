@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type OrderStatus = 'received' | 'in-progress' | 'ready' | 'completed';
 
@@ -44,6 +45,7 @@ export default function OrderCard({
   onStatusChange,
   getNextStatus,
 }: OrderCardProps) {
+  const { hasPermission } = useAuth();
   const nextStatus = getNextStatus(order.status);
 
   return (
@@ -103,7 +105,7 @@ export default function OrderCard({
             <Button variant="outline" size="sm" onClick={() => onViewReceipt(order)}>
               <Icon name="FileText" size={16} />
             </Button>
-            {nextStatus && (
+            {nextStatus && hasPermission('change_status') && (
               <Button variant="default" size="sm" onClick={() => onStatusChange(order.id, nextStatus)}>
                 <Icon name="ArrowRight" size={16} />
               </Button>

@@ -1,27 +1,71 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
+export type UserRole = 'director' | 'master' | 'accountant' | 'warranty_manager' | 'parts_manager' | 'reception_manager';
+
 interface User {
   id: string;
   username: string;
   fullName: string;
-  role: 'admin' | 'master' | 'manager';
+  role: UserRole;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  hasPermission: (permission: Permission) => boolean;
+  hasRole: (...roles: UserRole[]) => boolean;
 }
+
+export type Permission = 
+  | 'view_orders'
+  | 'create_orders'
+  | 'edit_orders'
+  | 'delete_orders'
+  | 'change_status'
+  | 'assign_master'
+  | 'view_finance'
+  | 'edit_finance'
+  | 'view_warranty'
+  | 'manage_parts'
+  | 'view_all';
+
+const rolePermissions: Record<UserRole, Permission[]> = {
+  director: [
+    'view_orders', 'create_orders', 'edit_orders', 'delete_orders',
+    'change_status', 'assign_master', 'view_finance', 'edit_finance',
+    'view_warranty', 'manage_parts', 'view_all'
+  ],
+  master: [
+    'view_orders', 'change_status', 'view_warranty'
+  ],
+  accountant: [
+    'view_orders', 'view_finance', 'edit_finance', 'view_all'
+  ],
+  warranty_manager: [
+    'view_orders', 'create_orders', 'edit_orders', 'change_status', 'view_warranty'
+  ],
+  parts_manager: [
+    'view_orders', 'manage_parts', 'view_all'
+  ],
+  reception_manager: [
+    'view_orders', 'create_orders', 'edit_orders', 'change_status', 'assign_master'
+  ],
+};
+
+export const roleLabels: Record<UserRole, string> = {
+  director: 'Директор',
+  master: 'Мастер',
+  accountant: 'Бухгалтер',
+  warranty_manager: 'Менеджер гарантия',
+  parts_manager: 'Менеджер запчасти',
+  reception_manager: 'Менеджер приёма',
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const mockUsers: Array<User & { password: string }> = [
-  { id: '1', username: 'admin', password: 'admin123', fullName: 'Администратор', role: 'admin' },
-  { id: '2', username: 'petrov', password: 'master123', fullName: 'Петров А.', role: 'master' },
-  { id: '3', username: 'ivanov', password: 'master123', fullName: 'Иванов Д.', role: 'master' },
-  { id: '4', username: 'manager', password: 'manager123', fullName: 'Сидорова М.', role: 'manager' },
-];
+const AUTH_API_URL = 'https://functions.poehali.dev/40ac4257-e65a-4139-9f49-415c6ed50616';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -33,18 +77,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (username: string, password: string): boolean => {
-    const foundUser = mockUsers.find(
-      (u) => u.username === username && u.password === password
-    );
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-      return true;
+      if (response.ok) {
+        const userData = await response.json();
+        const user: User = {
+          id: String(userData.id),
+          username: userData.username,
+          fullName: userData.fullName,
+          role: userData.role as UserRole,
+        };
+        setUser(user);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
@@ -52,8 +109,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('currentUser');
   };
 
+  const hasPermission = (permission: Permission): boolean => {
+    if (!user) return false;
+    const permissions = rolePermissions[user.role] || [];
+    return permissions.includes(permission);
+  };
+
+  const hasRole = (...roles: UserRole[]): boolean => {
+    if (!user) return false;
+    return roles.includes(user.role);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isAuthenticated: !!user,
+      hasPermission,
+      hasRole,
+    }}>
       {children}
     </AuthContext.Provider>
   );

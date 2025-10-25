@@ -15,7 +15,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -24,7 +24,7 @@ export default function Login() {
       return;
     }
 
-    const success = login(username, password);
+    const success = await login(username, password);
     if (success) {
       navigate('/');
     } else {
@@ -92,9 +92,12 @@ export default function Login() {
           <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-2">
             <p className="text-sm font-semibold text-muted-foreground">Тестовые аккаунты:</p>
             <div className="text-xs space-y-1 text-muted-foreground">
-              <p>• admin / admin123 (Администратор)</p>
-              <p>• petrov / master123 (Мастер)</p>
-              <p>• manager / manager123 (Менеджер)</p>
+              <p>• director / director123 (Директор)</p>
+              <p>• master1 / master123 (Мастер)</p>
+              <p>• accountant / accountant123 (Бухгалтер)</p>
+              <p>• warranty / warranty123 (Менеджер гарантия)</p>
+              <p>• parts / parts123 (Менеджер запчасти)</p>
+              <p>• reception / reception123 (Менеджер приёма)</p>
             </div>
           </div>
         </CardContent>

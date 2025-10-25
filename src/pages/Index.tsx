@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, roleLabels } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import OrderStats from '@/components/OrderStats';
 import OrderCard, { OrderStatus } from '@/components/OrderCard';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog';
 import KanbanBoard from '@/components/KanbanBoard';
+import RoleBadge from '@/components/RoleBadge';
 
 interface OrderHistoryItem {
   timestamp: string;
@@ -136,7 +137,7 @@ const priorityConfig = {
 };
 
 export default function Index() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -342,10 +343,12 @@ export default function Index() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button onClick={() => setIsNewOrderOpen(true)}>
-                <Icon name="Plus" className="mr-2" size={18} />
-                Новый заказ
-              </Button>
+              {hasPermission('create_orders') && (
+                <Button onClick={() => setIsNewOrderOpen(true)}>
+                  <Icon name="Plus" className="mr-2" size={18} />
+                  Новый заказ
+                </Button>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -359,9 +362,9 @@ export default function Index() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
+                    <div className="flex flex-col space-y-2">
                       <p className="text-sm font-medium">{user?.fullName}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      {user?.role && <RoleBadge role={user.role} />}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
