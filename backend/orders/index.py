@@ -64,7 +64,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         o.created_time as "createdTime",
                         o.price,
                         o.master,
-                        o.history
+                        o.history,
+                        TO_CHAR(o.status_deadline, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusDeadline",
+                        TO_CHAR(o.status_changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusChangedAt",
+                        o.is_overdue as "isOverdue"
                     FROM orders o
                     INNER JOIN order_users ou ON o.id = ou.order_id
                     WHERE ou.user_id = %s
@@ -90,7 +93,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         created_time as "createdTime",
                         price,
                         master,
-                        history
+                        history,
+                        TO_CHAR(status_deadline, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusDeadline",
+                        TO_CHAR(status_changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusChangedAt",
+                        is_overdue as "isOverdue"
                     FROM orders
                     ORDER BY created_at DESC
                 ''')
@@ -179,12 +185,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             order_id = body_data.get('id')
             
+            cursor.execute('SELECT status FROM orders WHERE order_id = %s', (order_id,))
+            old_status_row = cursor.fetchone()
+            old_status = old_status_row['status'] if old_status_row else None
+            new_status = body_data['status']
+            
+            status_deadline = body_data.get('statusDeadline')
+            
             cursor.execute('''
                 UPDATE orders
                 SET 
                     status = %s,
                     master = %s,
                     history = %s,
+                    status_deadline = %s,
+                    status_changed_at = NOW(),
+                    is_overdue = (CASE WHEN %s::timestamp IS NOT NULL AND NOW() > %s::timestamp THEN true ELSE false END),
                     updated_at = NOW()
                 WHERE order_id = %s
                 RETURNING 
@@ -205,13 +221,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     created_time as "createdTime",
                     price,
                     master,
-                    history
+                    history,
+                    TO_CHAR(status_deadline, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusDeadline",
+                    TO_CHAR(status_changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusChangedAt",
+                    is_overdue as "isOverdue"
             ''', (
-                body_data['status'],
+                new_status,
                 body_data.get('master'),
                 json.dumps(body_data['history']),
+                status_deadline,
+                status_deadline,
+                status_deadline,
                 order_id
             ))
+            
+            if old_status and old_status != new_status:
+                cursor.execute('SELECT EXTRACT(EPOCH FROM (NOW() - status_changed_at))/3600 FROM orders WHERE order_id = %s', (order_id,))
+                duration_result = cursor.fetchone()
+                duration_hours = int(duration_result[0]) if duration_result and duration_result[0] else 0
+                
+                cursor.execute('SELECT is_overdue FROM orders WHERE order_id = %s', (order_id,))
+                overdue_result = cursor.fetchone()
+                was_overdue = overdue_result['is_overdue'] if overdue_result else False
+                
+                cursor.execute('''
+                    INSERT INTO status_history (order_id, old_status, new_status, changed_by, duration_hours, was_overdue)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                ''', (order_id, old_status, new_status, body_data.get('changedBy', 'Система'), duration_hours, was_overdue))
             
             updated_order = cursor.fetchone()
             conn.commit()
