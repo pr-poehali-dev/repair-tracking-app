@@ -124,7 +124,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     repair_type, created_time, price, master, history
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING 
-                    id,
+                    id as db_id,
                     order_id as "id",
                     client_name as "clientName",
                     client_address as "clientAddress",
@@ -142,7 +142,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     created_time as "createdTime",
                     price,
                     master,
-                    history
+                    history,
+                    repair_description as "repairDescription",
+                    TO_CHAR(status_deadline, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusDeadline",
+                    TO_CHAR(status_changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "statusChangedAt",
+                    is_overdue as "isOverdue"
             ''', (
                 body_data['id'],
                 body_data['clientName'],
@@ -164,7 +168,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             ))
             
             new_order = cursor.fetchone()
-            new_order_id = new_order['id']
+            new_order_id = new_order['db_id']
             
             if user_id:
                 cursor.execute('''
