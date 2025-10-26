@@ -90,14 +90,7 @@ export default function Index() {
 
         <Tabs value={activeView} className="space-y-6">
           <TabsContent value="dashboard" className="space-y-6">
-            <OrderStats
-              total={stats.total}
-              received={stats.received}
-              inProgress={stats.inProgress}
-              ready={stats.ready}
-              completed={stats.completed}
-              revenue={stats.revenue}
-            />
+            <OrderStats stats={stats} />
 
             {filteredOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">

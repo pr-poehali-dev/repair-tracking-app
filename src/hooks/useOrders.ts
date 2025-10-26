@@ -3,12 +3,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Order, API_URL, mockOrders } from '@/lib/orderUtils';
 import { OrderStatus } from '@/components/OrderCard';
 import { NewOrderFormData } from '@/components/NewOrderDialog';
+import { UserRole } from '@/contexts/AuthContext';
 
 interface User {
   id: string;
+  username: string;
   fullName: string;
-  email: string;
-  role: string;
+  role: UserRole;
 }
 
 export function useOrders(user: User | null) {
