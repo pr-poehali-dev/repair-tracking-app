@@ -194,7 +194,7 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="bg-primary p-2 rounded-lg">
@@ -207,9 +207,9 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <ScrollArea className="max-h-[calc(90vh-160px)]">
-            <div className="space-y-6 pr-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-6">
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Icon name="User" size={18} className="text-primary" />
