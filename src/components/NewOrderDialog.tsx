@@ -319,6 +319,19 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
                   </div>
 
                   <div className="md:col-span-2">
+                    <Label htmlFor="issue">Заявленная неисправность <span className="text-destructive">*</span></Label>
+                    <Textarea
+                      id="issue"
+                      placeholder="Опишите проблему с техникой..."
+                      value={formData.issue}
+                      onChange={(e) => handleChange('issue', e.target.value)}
+                      rows={3}
+                      className={errors.issue ? 'border-destructive' : ''}
+                    />
+                    {errors.issue && <p className="text-xs text-destructive mt-1">{errors.issue}</p>}
+                  </div>
+
+                  <div className="md:col-span-2">
                     <Label htmlFor="appearance">Внешний вид</Label>
                     <Textarea
                       id="appearance"
