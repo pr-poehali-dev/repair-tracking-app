@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import NewOrderDialog from '@/components/NewOrderDialog';
 import ReceiptDialog from '@/components/ReceiptDialog';
+import PrintReceiptConfirmDialog from '@/components/PrintReceiptConfirmDialog';
 import OrderStats from '@/components/OrderStats';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog';
 import KanbanBoard from '@/components/KanbanBoard';
@@ -38,6 +39,8 @@ export default function Index() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+  const [showPrintConfirm, setShowPrintConfirm] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [isDeviceTypesOpen, setIsDeviceTypesOpen] = useState(false);
   const [isClientsSearchOpen, setIsClientsSearchOpen] = useState(false);
   const [isExtensionRequestsOpen, setIsExtensionRequestsOpen] = useState(false);
@@ -80,7 +83,8 @@ export default function Index() {
 
   const onCreateOrder = async (formData: any) => {
     const newOrder = await handleCreateOrder(formData);
-    setReceiptOrder(newOrder);
+    setCreatedOrder(newOrder);
+    setShowPrintConfirm(true);
   };
 
   const onStatusChange = (orderId: string, newStatus: any) => {
@@ -264,7 +268,18 @@ export default function Index() {
         onSavePartsRequest={onSavePartsRequest}
       />
 
-      <ReceiptDialog order={receiptOrder} onClose={() => setReceiptOrder(null)} />
+      <PrintReceiptConfirmDialog
+        open={showPrintConfirm}
+        onOpenChange={setShowPrintConfirm}
+        order={createdOrder}
+        onPrintReceipt={() => setReceiptOrder(createdOrder)}
+      />
+
+      <ReceiptDialog
+        open={!!receiptOrder}
+        onOpenChange={(open) => !open && setReceiptOrder(null)}
+        order={receiptOrder}
+      />
 
       <DeviceTypesDialog open={isDeviceTypesOpen} onOpenChange={setIsDeviceTypesOpen} />
 
