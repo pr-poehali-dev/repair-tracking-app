@@ -45,6 +45,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         query_params = event.get('queryStringParameters', {}) or {}
         action = query_params.get('action')
         
+        if action == 'search-chat':
+            if method == 'GET':
+                search_query = query_params.get('q', '').strip()
+                if not search_query or len(search_query) < 2:
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps([])
+                    }
+                
+                cursor.execute('''
+                    SELECT DISTINCT order_id
+                    FROM order_chat_messages
+                    WHERE LOWER(message) LIKE LOWER(%s)
+                    ORDER BY order_id
+                ''', (f'%{search_query}%',))
+                
+                matches = cursor.fetchall()
+                order_ids = [row['order_id'] for row in matches]
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps(order_ids, ensure_ascii=False)
+                }
+        
         if action == 'chat':
             if method == 'GET':
                 order_id = query_params.get('orderId')

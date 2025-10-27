@@ -20,6 +20,7 @@ import OrderList from '@/components/OrderList';
 import Icon from '@/components/ui/icon';
 import { useRepairPrices } from '@/hooks/useRepairPrices';
 import { useOrders } from '@/hooks/useOrders';
+import { useChatSearch } from '@/hooks/useChatSearch';
 import { 
   Order, 
   statusConfig, 
@@ -51,8 +52,9 @@ export default function Index() {
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
   const { prices, addPrice, deletePrice } = useRepairPrices();
+  const { chatMatches } = useChatSearch(searchQuery);
 
-  const filteredOrders = filterOrders(orders, searchQuery, filterType);
+  const filteredOrders = filterOrders(orders, searchQuery, filterType, chatMatches);
   const stats = calculateStats(orders);
   const hasCriticalOverdue = hasCriticalOverdueOrders(orders, user?.username);
   const criticalOrders = getCriticalOverdueOrders(orders, user?.username);

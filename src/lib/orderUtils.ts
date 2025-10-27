@@ -286,7 +286,7 @@ export const getCriticalOverdueOrders = (orders: Order[], masterName?: string): 
   );
 };
 
-export const filterOrders = (orders: Order[], searchQuery: string, filterType?: 'all' | 'overdue') => {
+export const filterOrders = (orders: Order[], searchQuery: string, filterType?: 'all' | 'overdue', chatMatches?: string[]) => {
   let filtered = orders;
   
   if (filterType === 'overdue') {
@@ -294,12 +294,21 @@ export const filterOrders = (orders: Order[], searchQuery: string, filterType?: 
   }
   
   if (searchQuery) {
-    filtered = filtered.filter(
-      (order) =>
-        order.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.deviceType.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const query = searchQuery.toLowerCase().trim();
+    filtered = filtered.filter((order) => {
+      const matchesBasicFields = 
+        order.clientName.toLowerCase().includes(query) ||
+        order.id.toLowerCase().includes(query) ||
+        order.deviceType.toLowerCase().includes(query) ||
+        order.clientPhone.toLowerCase().includes(query) ||
+        order.clientAddress.toLowerCase().includes(query) ||
+        order.deviceModel.toLowerCase().includes(query) ||
+        order.issue.toLowerCase().includes(query);
+      
+      const matchesChat = chatMatches?.includes(order.id) || false;
+      
+      return matchesBasicFields || matchesChat;
+    });
   }
   
   return filtered.sort((a, b) => {
