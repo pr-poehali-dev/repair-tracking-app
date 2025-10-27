@@ -27,6 +27,9 @@ export interface Order {
   master?: string;
   repairDescription?: string;
   history: OrderHistoryItem[];
+  statusDeadline?: string;
+  statusChangedAt?: string;
+  isOverdue?: boolean;
 }
 
 export const API_URL = 'https://functions.poehali.dev/e9af1ae4-2b09-4ac1-a49a-bf1172ebfc8c';
@@ -124,6 +127,80 @@ export const priorityConfig = {
   low: { label: 'Низкий', color: 'bg-slate-100 text-slate-700' },
   medium: { label: 'Средний', color: 'bg-blue-100 text-blue-700' },
   high: { label: 'Высокий', color: 'bg-orange-100 text-orange-700' },
+};
+
+export const statusDeadlineHours: Record<OrderStatus, number> = {
+  'received': 2,
+  'diagnostics': 24,
+  'repair': 48,
+  'parts-needed': 4,
+  'cost-approval': 12,
+  'payment-pending': 72,
+  'parts-delivery': 168,
+  'parts-arrived': 4,
+  'repair-continues': 48,
+  'repair-completed': 2,
+  'notify-client': 1,
+  'client-notified': 48,
+  'issued': 0,
+  'stuck': 0,
+  'disposal': 0,
+};
+
+export const calculateStatusDeadline = (status: OrderStatus): string => {
+  const hours = statusDeadlineHours[status] || 24;
+  const deadline = new Date();
+  deadline.setHours(deadline.getHours() + hours);
+  return deadline.toISOString();
+};
+
+export const isOrderOverdue = (order: Order): boolean => {
+  if (!order.statusDeadline) return false;
+  return new Date() > new Date(order.statusDeadline);
+};
+
+export const getDeadlineStatus = (order: Order): 'ok' | 'warning' | 'danger' | 'overdue' => {
+  if (!order.statusDeadline) return 'ok';
+  
+  const now = new Date().getTime();
+  const deadline = new Date(order.statusDeadline).getTime();
+  const statusChanged = order.statusChangedAt ? new Date(order.statusChangedAt).getTime() : now;
+  
+  const totalTime = deadline - statusChanged;
+  const remainingTime = deadline - now;
+  const percentRemaining = (remainingTime / totalTime) * 100;
+  
+  if (remainingTime <= 0) return 'overdue';
+  if (percentRemaining <= 10) return 'danger';
+  if (percentRemaining <= 25) return 'warning';
+  return 'ok';
+};
+
+export const formatDeadline = (deadline: string): string => {
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  const diffMs = deadlineDate.getTime() - now.getTime();
+  
+  if (diffMs < 0) {
+    const absDiff = Math.abs(diffMs);
+    const hours = Math.floor(absDiff / (1000 * 60 * 60));
+    const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 24) {
+      return `Просрочено на ${Math.floor(hours / 24)} дн.`;
+    }
+    return `Просрочено на ${hours}ч ${minutes}м`;
+  }
+  
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 48) {
+    return `${Math.floor(hours / 24)} дн.`;
+  }
+  if (hours > 0) {
+    return `${hours}ч ${minutes}м`;
+  }
+  return `${minutes}м`;
 };
 
 export const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {

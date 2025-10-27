@@ -133,10 +133,35 @@ export function useOrders(user: User | null) {
       user: user?.fullName || 'Система',
     };
 
+    const statusDeadlineHours: Record<OrderStatus, number> = {
+      'received': 2,
+      'diagnostics': 24,
+      'repair': 48,
+      'parts-needed': 4,
+      'cost-approval': 12,
+      'payment-pending': 72,
+      'parts-delivery': 168,
+      'parts-arrived': 4,
+      'repair-continues': 48,
+      'repair-completed': 2,
+      'notify-client': 1,
+      'client-notified': 48,
+      'issued': 0,
+      'stuck': 0,
+      'disposal': 0,
+    };
+
+    const hours = statusDeadlineHours[newStatus] || 24;
+    const deadline = new Date();
+    deadline.setHours(deadline.getHours() + hours);
+
     const updatedOrder = {
       ...order,
       status: newStatus,
       history: [...order.history, historyItem],
+      statusDeadline: deadline.toISOString(),
+      statusChangedAt: now.toISOString(),
+      isOverdue: false,
     };
 
     if ((newStatus === 'diagnostics' || newStatus === 'repair') && !order.master && user) {

@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import AssignUserDialog from '@/components/AssignUserDialog';
+import { getDeadlineStatus, formatDeadline } from '@/lib/orderUtils';
 
 export type OrderStatus = 
   | 'received'
@@ -92,16 +93,46 @@ export default function OrderCard({
     onStatusChange(order.id, newStatus);
   };
 
+  const deadlineStatus = getDeadlineStatus(order);
+  const getDeadlineColor = () => {
+    switch (deadlineStatus) {
+      case 'overdue': return 'ring-2 ring-red-500';
+      case 'danger': return 'ring-2 ring-orange-500';
+      case 'warning': return 'ring-2 ring-yellow-500';
+      default: return '';
+    }
+  };
+
   return (
     <>
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={`hover:shadow-md transition-shadow ${getDeadlineColor()}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <CardTitle className="text-lg">{order.clientName}</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">{order.id}</p>
           </div>
-          <Badge className={statusConfig[order.status].color}>{statusConfig[order.status].label}</Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge className={statusConfig[order.status].color}>{statusConfig[order.status].label}</Badge>
+            {order.statusDeadline && (
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  deadlineStatus === 'overdue' ? 'bg-red-50 text-red-700 border-red-300' :
+                  deadlineStatus === 'danger' ? 'bg-orange-50 text-orange-700 border-orange-300' :
+                  deadlineStatus === 'warning' ? 'bg-yellow-50 text-yellow-700 border-yellow-300' :
+                  'bg-green-50 text-green-700 border-green-300'
+                }`}
+              >
+                <Icon 
+                  name={deadlineStatus === 'overdue' ? 'AlertTriangle' : 'Clock'} 
+                  size={12} 
+                  className="mr-1" 
+                />
+                {formatDeadline(order.statusDeadline)}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
