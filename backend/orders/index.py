@@ -56,10 +56,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 cursor.execute('''
-                    SELECT id, order_id, user_id, user_name, message, timestamp, is_read
-                    FROM order_chat_messages
-                    WHERE order_id = %s
-                    ORDER BY timestamp ASC
+                    SELECT 
+                        ocm.id, 
+                        ocm.order_id, 
+                        ocm.user_id, 
+                        ocm.user_name, 
+                        ocm.message, 
+                        ocm.timestamp, 
+                        ocm.is_read,
+                        u.avatar_url
+                    FROM order_chat_messages ocm
+                    LEFT JOIN users u ON CAST(ocm.user_id AS INTEGER) = u.id
+                    WHERE ocm.order_id = %s
+                    ORDER BY ocm.timestamp ASC
                 ''', (order_id,))
                 
                 messages = cursor.fetchall()
@@ -71,6 +80,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'orderId': msg['order_id'],
                         'userId': str(msg['user_id']),
                         'userName': msg['user_name'],
+                        'userAvatar': msg['avatar_url'],
                         'message': msg['message'],
                         'timestamp': msg['timestamp'].isoformat() if msg['timestamp'] else None,
                         'isRead': msg['is_read']

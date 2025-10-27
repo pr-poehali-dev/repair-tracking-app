@@ -10,6 +10,7 @@ interface ChatMessage {
   orderId: string;
   userId: string;
   userName: string;
+  userAvatar?: string;
   message: string;
   timestamp: string;
   isRead: boolean;
@@ -149,13 +150,29 @@ export default function OrderChatSection({ orderId }: OrderChatSectionProps) {
             ) : (
               messages.map((msg) => {
                 const isCurrentUser = msg.userId === user?.id;
+                const avatarUrl = isCurrentUser ? user?.avatarUrl : msg.userAvatar;
+                
                 return (
                   <div
                     key={msg.id}
-                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                    className={`flex gap-2 ${isCurrentUser ? 'justify-end flex-row-reverse' : 'justify-start'}`}
                   >
+                    <div className="shrink-0">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={msg.userName}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-primary/20"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground border-2 border-primary/20">
+                          {msg.userName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
+                      className={`max-w-[75%] rounded-lg p-3 ${
                         isCurrentUser
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-background border'

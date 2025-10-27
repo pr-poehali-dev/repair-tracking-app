@@ -7,6 +7,7 @@ interface User {
   username: string;
   fullName: string;
   role: UserRole;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -16,6 +17,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   hasPermission: (permission: Permission) => boolean;
   hasRole: (...roles: UserRole[]) => boolean;
+  updateUserAvatar: (avatarUrl: string) => void;
 }
 
 export type Permission = 
@@ -104,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: userData.username,
           fullName: userData.fullName,
           role: userData.role as UserRole,
+          avatarUrl: userData.avatarUrl,
         };
         setUser(user);
         localStorage.setItem('currentUser', JSON.stringify(user));
@@ -132,6 +135,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.includes(user.role);
   };
 
+  const updateUserAvatar = (avatarUrl: string) => {
+    if (user) {
+      const updatedUser = { ...user, avatarUrl };
+      setUser(updatedUser);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -140,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       hasPermission,
       hasRole,
+      updateUserAvatar,
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,7 @@ import {
 import { useAuth, roleLabels } from '@/contexts/AuthContext';
 import Icon from '@/components/ui/icon';
 import RoleBadge from '@/components/RoleBadge';
+import UserAvatarUpload from '@/components/UserAvatarUpload';
 
 interface AppHeaderProps {
   searchQuery: string;
@@ -43,6 +45,7 @@ export default function AppHeader({
   onMasterStats,
 }: AppHeaderProps) {
   const { user, logout, hasPermission, hasRole } = useAuth();
+  const [isAvatarUploadOpen, setIsAvatarUploadOpen] = useState(false);
 
   const getUserInitials = (name: string) => {
     return name
@@ -151,6 +154,7 @@ export default function AppHeader({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar>
+                  {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
                   <AvatarFallback>{user ? getUserInitials(user.fullName) : 'U'}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -167,6 +171,11 @@ export default function AppHeader({
                   )}
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setIsAvatarUploadOpen(true)}>
+                <Icon name="User" size={16} className="mr-2" />
+                Загрузить аватарку
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               {hasRole('master') && onMasterStats && (
                 <>
@@ -185,6 +194,11 @@ export default function AppHeader({
           </DropdownMenu>
         </div>
       </div>
+      
+      <UserAvatarUpload 
+        open={isAvatarUploadOpen} 
+        onOpenChange={setIsAvatarUploadOpen} 
+      />
     </header>
   );
 }

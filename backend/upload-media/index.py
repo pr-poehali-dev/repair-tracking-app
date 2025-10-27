@@ -33,6 +33,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'Access-Control-Allow-Origin': '*'
     }
     
+    query_params = event.get('queryStringParameters', {}) or {}
+    action = query_params.get('action')
+    
+    if action == 'avatar':
+        if method == 'POST':
+            return upload_avatar(event, headers)
+        elif method == 'PUT':
+            return upload_avatar(event, headers)
+    
     if method == 'GET':
         return get_order_media(event, headers)
     elif method == 'POST':
@@ -229,3 +238,101 @@ def delete_media(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, An
     finally:
         cursor.close()
         conn.close()
+
+
+def upload_avatar(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, Any]:
+    body_data = json.loads(event.get('body', '{}'))
+    
+    user_id = body_data.get('userId')
+    file_base64 = body_data.get('fileData')
+    file_name = body_data.get('fileName', 'avatar.jpg')
+    
+    if not all([user_id, file_base64]):
+        return {
+            'statusCode': 400,
+            'headers': headers,
+            'body': json.dumps({'error': 'Missing required fields: userId, fileData'})
+        }
+    
+    try:
+        file_data = base64.b64decode(file_base64)
+        file_size = len(file_data)
+        
+        if file_size > 5 * 1024 * 1024:
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Avatar size must be less than 5 MB'})
+            }
+        
+        file_ext = file_name.split('.')[-1].lower() if '.' in file_name else 'jpg'
+        unique_name = f"avatars/user-{user_id}.{file_ext}"
+        
+        s3_bucket = os.environ.get('S3_BUCKET', 'poehali-files')
+        s3_endpoint = os.environ.get('S3_ENDPOINT', 'https://storage.yandexcloud.net')
+        
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=s3_endpoint,
+            aws_access_key_id=os.environ.get('S3_ACCESS_KEY'),
+            aws_secret_access_key=os.environ.get('S3_SECRET_KEY')
+        )
+        
+        content_type_map = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp'
+        }
+        content_type = content_type_map.get(file_ext, 'image/jpeg')
+        
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=unique_name,
+            Body=file_data,
+            ContentType=content_type,
+            ACL='public-read'
+        )
+        
+        avatar_url = f"{s3_endpoint}/{s3_bucket}/{unique_name}"
+        
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg2.connect(dsn)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('''
+            UPDATE users
+            SET avatar_url = %s
+            WHERE id = %s
+            RETURNING id, username, full_name as "fullName", role, avatar_url as "avatarUrl"
+        ''', (avatar_url, user_id))
+        
+        updated_user = cursor.fetchone()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        if not updated_user:
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({'error': 'User not found'})
+            }
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'isBase64Encoded': False,
+            'body': json.dumps({
+                'avatarUrl': avatar_url,
+                'user': dict(updated_user),
+                'success': True
+            }, ensure_ascii=False)
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': str(e)})
+        }

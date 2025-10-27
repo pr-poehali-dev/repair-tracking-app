@@ -59,7 +59,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 username,
                 full_name as "fullName",
                 role,
-                is_active as "isActive"
+                is_active as "isActive",
+                avatar_url as "avatarUrl"
             FROM users
             WHERE username = %s AND password = %s AND is_active = TRUE
         ''', (username, password))
