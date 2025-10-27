@@ -194,8 +194,8 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="flex items-center gap-3">
             <div className="bg-primary p-2 rounded-lg">
               <Icon name="Plus" size={20} className="text-primary-foreground" />
@@ -208,7 +208,7 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <ScrollArea className="flex-1 pr-4">
+          <ScrollArea className="flex-1 px-6">
             <div className="space-y-6">
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
@@ -411,7 +411,7 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
             </div>
           </ScrollArea>
 
-          <div className="flex gap-3 mt-6 pt-4 border-t">
+          <div className="flex gap-3 px-6 pb-6 pt-4 border-t bg-background">
             <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Отмена
             </Button>
