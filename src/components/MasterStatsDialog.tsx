@@ -182,17 +182,11 @@ export default function MasterStatsDialog({
               <CardDescription className="text-green-700 font-medium">Моя зарплата за период</CardDescription>
               <CardTitle className="text-4xl text-green-600">{Math.round(stats.masterSalary).toLocaleString()} ₽</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent>
               <div className="flex items-center gap-2 text-sm text-green-700">
                 <Icon name="Wallet" size={16} />
                 {salaryPercent}% от стоимости {stats.completed} завершённых ремонтов
               </div>
-              {stats.cashlessDeduction > 0 && (
-                <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-50 rounded px-2 py-1">
-                  <Icon name="AlertCircle" size={14} />
-                  Вычет за безналичную оплату: -{Math.round(stats.cashlessDeduction).toLocaleString()} ₽ (6%)
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -276,14 +270,7 @@ export default function MasterStatsDialog({
                   {stats.completed > 0 ? `${Math.round(stats.masterSalary / stats.completed).toLocaleString()} ₽` : 'Нет данных'}
                 </span>
               </div>
-              {stats.cashlessDeduction > 0 && (
-                <div className="flex items-center justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Вычет за безнал (6%)</span>
-                  <span className="font-semibold text-orange-600">
-                    -{Math.round(stats.cashlessDeduction).toLocaleString()} ₽
-                  </span>
-                </div>
-              )}
+
               <div className="flex items-center justify-between py-2">
                 <span className="text-sm text-muted-foreground">Процент завершения</span>
                 <span className="font-semibold">
