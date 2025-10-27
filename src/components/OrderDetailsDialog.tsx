@@ -24,6 +24,7 @@ import RepairInfoSection from '@/components/order-details/RepairInfoSection';
 import DelaySection from '@/components/order-details/DelaySection';
 import PartsRequestSection from '@/components/order-details/PartsRequestSection';
 import HistorySection from '@/components/order-details/HistorySection';
+import OrderChatSection from '@/components/OrderChatSection';
 
 export type { OrderStatus };
 
@@ -143,6 +144,10 @@ export default function OrderDetailsDialog({
                 hasPermission={hasPermission}
                 onSavePartsRequest={handleSavePartsRequest}
               />
+
+              <Separator />
+
+              <OrderChatSection orderId={order.id} />
 
               <Separator />
 

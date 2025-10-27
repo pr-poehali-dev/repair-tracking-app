@@ -42,6 +42,77 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         headers = event.get('headers', {})
         user_id = headers.get('X-User-Id') or headers.get('x-user-id')
+        query_params = event.get('queryStringParameters', {}) or {}
+        action = query_params.get('action')
+        
+        if action == 'chat':
+            if method == 'GET':
+                order_id = query_params.get('orderId')
+                if not order_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'orderId required'})
+                    }
+                
+                cursor.execute('''
+                    SELECT id, order_id, user_id, user_name, message, timestamp, is_read
+                    FROM order_chat_messages
+                    WHERE order_id = %s
+                    ORDER BY timestamp ASC
+                ''', (order_id,))
+                
+                messages = cursor.fetchall()
+                
+                result = []
+                for msg in messages:
+                    result.append({
+                        'id': str(msg['id']),
+                        'orderId': msg['order_id'],
+                        'userId': str(msg['user_id']),
+                        'userName': msg['user_name'],
+                        'message': msg['message'],
+                        'timestamp': msg['timestamp'].isoformat() if msg['timestamp'] else None,
+                        'isRead': msg['is_read']
+                    })
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps(result, ensure_ascii=False)
+                }
+            
+            elif method == 'POST':
+                body_data = json.loads(event.get('body', '{}'))
+                
+                order_id = body_data.get('orderId')
+                message_user_id = body_data.get('userId')
+                user_name = body_data.get('userName')
+                message = body_data.get('message')
+                
+                if not all([order_id, message_user_id, user_name, message]):
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Missing required fields'})
+                    }
+                
+                cursor.execute('''
+                    INSERT INTO order_chat_messages (order_id, user_id, user_name, message, timestamp, is_read)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (order_id, message_user_id, user_name, message, datetime.now(), False))
+                
+                message_id = cursor.fetchone()['id']
+                conn.commit()
+                
+                return {
+                    'statusCode': 201,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'id': str(message_id), 'success': True})
+                }
         
         if method == 'GET':
             if user_id:
