@@ -42,6 +42,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif method == 'PUT':
             return upload_avatar(event, headers)
     
+    if action == 'delete-avatar':
+        if method == 'POST':
+            return delete_avatar(event, headers)
+    
     if method == 'GET':
         return get_order_media(event, headers)
     elif method == 'POST':
@@ -326,6 +330,59 @@ def upload_avatar(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, A
             'isBase64Encoded': False,
             'body': json.dumps({
                 'avatarUrl': avatar_url,
+                'user': dict(updated_user),
+                'success': True
+            }, ensure_ascii=False)
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': str(e)})
+        }
+
+
+def delete_avatar(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, Any]:
+    body_data = json.loads(event.get('body', '{}'))
+    
+    user_id = body_data.get('userId')
+    
+    if not user_id:
+        return {
+            'statusCode': 400,
+            'headers': headers,
+            'body': json.dumps({'error': 'Missing required field: userId'})
+        }
+    
+    try:
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg2.connect(dsn)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('''
+            UPDATE users
+            SET avatar_url = NULL
+            WHERE id = %s
+            RETURNING id, username, full_name as "fullName", role, avatar_url as "avatarUrl"
+        ''', (user_id,))
+        
+        updated_user = cursor.fetchone()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        if not updated_user:
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({'error': 'User not found'})
+            }
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'isBase64Encoded': False,
+            'body': json.dumps({
                 'user': dict(updated_user),
                 'success': True
             }, ensure_ascii=False)

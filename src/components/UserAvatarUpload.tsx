@@ -23,6 +23,7 @@ export default function UserAvatarUpload({ open, onOpenChange }: UserAvatarUploa
   const { user, updateUserAvatar } = useAuth();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -120,11 +121,60 @@ export default function UserAvatarUpload({ open, onOpenChange }: UserAvatarUploa
     }
   };
 
+  const handleDelete = async () => {
+    if (!user || !user.avatarUrl) return;
+
+    try {
+      setIsDeleting(true);
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (user.id) {
+        headers['X-User-Id'] = user.id;
+      }
+
+      const response = await fetch(`${UPLOAD_API_URL}?action=delete-avatar`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          userId: user.id,
+        }),
+      });
+
+      if (response.ok) {
+        updateUserAvatar('');
+        
+        toast({
+          title: 'Аватарка удалена',
+          description: 'Ваша фотография успешно удалена',
+        });
+        
+        onOpenChange(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      } else {
+        throw new Error('Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления аватарки:', error);
+      toast({
+        title: 'Ошибка удаления',
+        description: 'Не удалось удалить аватарку',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Загрузить аватарку</DialogTitle>
+          <DialogTitle>
+            {user?.avatarUrl ? 'Изменить аватарку' : 'Загрузить аватарку'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -166,30 +216,54 @@ export default function UserAvatarUpload({ open, onOpenChange }: UserAvatarUploa
           )}
         </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false);
-              setSelectedFile(null);
-              setPreviewUrl(null);
-            }}
-          >
-            Отмена
-          </Button>
-          <Button onClick={handleUpload} disabled={!selectedFile || isUploading}>
-            {isUploading ? (
-              <>
-                <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
-                Загрузка...
-              </>
-            ) : (
-              <>
-                <Icon name="Upload" size={16} className="mr-2" />
-                Загрузить
-              </>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <div className="flex gap-2 flex-1">
+            {user?.avatarUrl && !selectedFile && (
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 sm:flex-none"
+              >
+                {isDeleting ? (
+                  <>
+                    <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                    Удаление...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Trash2" size={16} className="mr-2" />
+                    Удалить
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                setSelectedFile(null);
+                setPreviewUrl(null);
+              }}
+            >
+              Отмена
+            </Button>
+            <Button onClick={handleUpload} disabled={!selectedFile || isUploading}>
+              {isUploading ? (
+                <>
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                  Загрузка...
+                </>
+              ) : (
+                <>
+                  <Icon name="Upload" size={16} className="mr-2" />
+                  {user?.avatarUrl ? 'Изменить' : 'Загрузить'}
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
