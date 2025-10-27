@@ -33,6 +33,13 @@ export default function MasterStatsDialog({
     to: new Date().toISOString().split('T')[0],
   });
 
+  const getMasterSalaryPercent = (): number => {
+    const saved = localStorage.getItem('masterSalaryPercent');
+    return saved ? parseInt(saved) : 50;
+  };
+
+  const salaryPercent = getMasterSalaryPercent();
+
   const filterOrdersByDate = (orders: Order[]): Order[] => {
     const fromDate = new Date(dateRange.from);
     const toDate = new Date(dateRange.to);
@@ -55,7 +62,7 @@ export default function MasterStatsDialog({
       .reduce((sum, o) => sum + (o.price || 0), 0),
     masterSalary: filteredOrders
       .filter(o => o.status === 'ready' || o.status === 'completed')
-      .reduce((sum, o) => sum + ((o.price || 0) * 0.5), 0),
+      .reduce((sum, o) => sum + ((o.price || 0) * (salaryPercent / 100)), 0),
     avgRepairTime: 0,
   };
 
@@ -155,7 +162,7 @@ export default function MasterStatsDialog({
             <CardContent>
               <div className="flex items-center gap-2 text-sm text-green-700">
                 <Icon name="Wallet" size={16} />
-                50% от стоимости {stats.completed} завершённых ремонтов
+                {salaryPercent}% от стоимости {stats.completed} завершённых ремонтов
               </div>
             </CardContent>
           </Card>

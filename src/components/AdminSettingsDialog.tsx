@@ -11,6 +11,7 @@ import Icon from '@/components/ui/icon';
 import EmployeesManagement from '@/components/admin/EmployeesManagement';
 import RolesPermissionsManagement from '@/components/admin/RolesPermissionsManagement';
 import DatabasesManagement from '@/components/admin/DatabasesManagement';
+import SalarySettingsManagement from '@/components/admin/SalarySettingsManagement';
 
 interface AdminSettingsDialogProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export default function AdminSettingsDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="employees">
               <Icon name="Users" size={16} className="mr-2" />
               Сотрудники
@@ -49,6 +50,10 @@ export default function AdminSettingsDialog({
             <TabsTrigger value="roles">
               <Icon name="Key" size={16} className="mr-2" />
               Роли и права
+            </TabsTrigger>
+            <TabsTrigger value="salary">
+              <Icon name="Wallet" size={16} className="mr-2" />
+              Зарплаты
             </TabsTrigger>
             <TabsTrigger value="databases">
               <Icon name="Database" size={16} className="mr-2" />
@@ -62,6 +67,10 @@ export default function AdminSettingsDialog({
 
           <TabsContent value="roles" className="mt-4">
             <RolesPermissionsManagement />
+          </TabsContent>
+
+          <TabsContent value="salary" className="mt-4">
+            <SalarySettingsManagement />
           </TabsContent>
 
           <TabsContent value="databases" className="mt-4">
