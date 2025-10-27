@@ -62,6 +62,17 @@ export default function MasterStatsDialog({
 
   const filteredOrders = filterOrdersByDate(orders);
 
+  const calculateMasterSalary = (order: Order): number => {
+    const price = order.price || 0;
+    let salary = price * (salaryPercent / 100);
+    
+    if (order.repairType === 'cashless') {
+      salary = salary * 0.94;
+    }
+    
+    return salary;
+  };
+
   const stats = {
     total: filteredOrders.length,
     completed: filteredOrders.filter(o => o.status === 'ready' || o.status === 'completed').length,
@@ -71,7 +82,10 @@ export default function MasterStatsDialog({
       .reduce((sum, o) => sum + (o.price || 0), 0),
     masterSalary: filteredOrders
       .filter(o => o.status === 'ready' || o.status === 'completed')
-      .reduce((sum, o) => sum + ((o.price || 0) * (salaryPercent / 100)), 0),
+      .reduce((sum, o) => sum + calculateMasterSalary(o), 0),
+    cashlessDeduction: filteredOrders
+      .filter(o => (o.status === 'ready' || o.status === 'completed') && o.repairType === 'cashless')
+      .reduce((sum, o) => sum + ((o.price || 0) * (salaryPercent / 100) * 0.06), 0),
     avgRepairTime: 0,
   };
 
@@ -168,11 +182,17 @@ export default function MasterStatsDialog({
               <CardDescription className="text-green-700 font-medium">Моя зарплата за период</CardDescription>
               <CardTitle className="text-4xl text-green-600">{Math.round(stats.masterSalary).toLocaleString()} ₽</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-green-700">
                 <Icon name="Wallet" size={16} />
                 {salaryPercent}% от стоимости {stats.completed} завершённых ремонтов
               </div>
+              {stats.cashlessDeduction > 0 && (
+                <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-50 rounded px-2 py-1">
+                  <Icon name="AlertCircle" size={14} />
+                  Вычет за безналичную оплату: -{Math.round(stats.cashlessDeduction).toLocaleString()} ₽ (6%)
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -256,6 +276,14 @@ export default function MasterStatsDialog({
                   {stats.completed > 0 ? `${Math.round(stats.masterSalary / stats.completed).toLocaleString()} ₽` : 'Нет данных'}
                 </span>
               </div>
+              {stats.cashlessDeduction > 0 && (
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground">Вычет за безнал (6%)</span>
+                  <span className="font-semibold text-orange-600">
+                    -{Math.round(stats.cashlessDeduction).toLocaleString()} ₽
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between py-2">
                 <span className="text-sm text-muted-foreground">Процент завершения</span>
                 <span className="font-semibold">
