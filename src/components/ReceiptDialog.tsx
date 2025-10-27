@@ -14,7 +14,7 @@ interface Order {
   issue: string;
   appearance: string;
   accessories: string;
-  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
+  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   createdAt: string;
   createdTime: string;
 }
@@ -30,6 +30,7 @@ const repairTypeLabels = {
   repeat: 'Повторный',
   paid: 'Платный',
   cashless: 'Безнал',
+  'our-device': 'Наша техника',
 };
 
 export default function ReceiptDialog({ open, onOpenChange, order }: ReceiptDialogProps) {

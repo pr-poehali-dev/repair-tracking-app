@@ -20,7 +20,7 @@ export interface Order {
   accessories: string;
   status: OrderStatus;
   priority: 'low' | 'medium' | 'high';
-  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
+  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   createdAt: string;
   createdTime: string;
   price?: number;

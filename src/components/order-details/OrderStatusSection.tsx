@@ -16,7 +16,7 @@ interface Order {
   id: string;
   status: OrderStatus;
   priority: 'low' | 'medium' | 'high';
-  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
+  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   createdAt: string;
   createdTime: string;
   repairDescription?: string;
@@ -38,6 +38,7 @@ const repairTypeLabels = {
   repeat: 'Повторный',
   paid: 'Платный',
   cashless: 'Безнал',
+  'our-device': 'Наша техника',
 };
 
 export default function OrderStatusSection({

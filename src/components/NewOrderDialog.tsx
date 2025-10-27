@@ -417,6 +417,7 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
                           <SelectItem value="repeat">Повторный</SelectItem>
                           <SelectItem value="paid">Платный</SelectItem>
                           <SelectItem value="cashless">Безнал</SelectItem>
+                          <SelectItem value="our-device">Наша техника</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
