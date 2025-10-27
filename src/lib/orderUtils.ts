@@ -234,6 +234,18 @@ export const calculateStats = (orders: Order[]) => ({
   revenue: orders.reduce((sum, o) => sum + (o.price || 0), 0),
 });
 
+const getPriorityScore = (priority: 'low' | 'medium' | 'high'): number => {
+  return { low: 1, medium: 2, high: 3 }[priority];
+};
+
+const getUrgencyScore = (order: Order): number => {
+  const deadlineStatus = getDeadlineStatus(order);
+  if (deadlineStatus === 'overdue') return 4;
+  if (deadlineStatus === 'danger') return 3;
+  if (deadlineStatus === 'warning') return 2;
+  return 1;
+};
+
 export const filterOrders = (orders: Order[], searchQuery: string, filterType?: 'all' | 'overdue') => {
   let filtered = orders;
   
@@ -250,5 +262,10 @@ export const filterOrders = (orders: Order[], searchQuery: string, filterType?: 
     );
   }
   
-  return filtered;
+  return filtered.sort((a, b) => {
+    const urgencyDiff = getUrgencyScore(b) - getUrgencyScore(a);
+    if (urgencyDiff !== 0) return urgencyDiff;
+    
+    return getPriorityScore(b.priority) - getPriorityScore(a.priority);
+  });
 };
