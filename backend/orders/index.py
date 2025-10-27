@@ -60,17 +60,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         SELECT DISTINCT ocm.order_id
                         FROM order_chat_messages ocm
                         INNER JOIN order_users ou ON ocm.order_id = ou.order_id
-                        WHERE LOWER(ocm.message) LIKE LOWER(%s)
+                        WHERE (
+                            to_tsvector('russian', ocm.message) @@ plainto_tsquery('russian', %s)
+                            OR LOWER(ocm.message) LIKE LOWER(%s)
+                        )
                         AND ou.user_id = %s
                         ORDER BY ocm.order_id
-                    ''', (f'%{search_query}%', int(user_id)))
+                    ''', (search_query, f'%{search_query}%', int(user_id)))
                 else:
                     cursor.execute('''
                         SELECT DISTINCT order_id
                         FROM order_chat_messages
-                        WHERE LOWER(message) LIKE LOWER(%s)
+                        WHERE (
+                            to_tsvector('russian', message) @@ plainto_tsquery('russian', %s)
+                            OR LOWER(message) LIKE LOWER(%s)
+                        )
                         ORDER BY order_id
-                    ''', (f'%{search_query}%',))
+                    ''', (search_query, f'%{search_query}%'))
                 
                 matches = cursor.fetchall()
                 order_ids = [row['order_id'] for row in matches]

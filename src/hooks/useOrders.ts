@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Order, API_URL, mockOrders } from '@/lib/orderUtils';
 import { OrderStatus } from '@/components/OrderCard';
@@ -17,11 +17,7 @@ export function useOrders(user: User | null) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadOrders();
-  }, [user]);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setIsLoading(true);
       const headers: HeadersInit = {};
@@ -48,9 +44,13 @@ export function useOrders(user: User | null) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id, toast]);
 
-  const handleCreateOrder = async (formData: NewOrderFormData) => {
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  const handleCreateOrder = useCallback(async (formData: NewOrderFormData) => {
     const maxOrderNumber = orders.reduce((max, order) => {
       const num = parseInt(order.id.replace('ORD-', ''));
       return num > max ? num : max;
@@ -112,9 +112,9 @@ export function useOrders(user: User | null) {
       });
       return newOrder;
     }
-  };
+  }, [orders, user, toast]);
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus, selectedOrder: Order | null, setSelectedOrder: (order: Order | null) => void) => {
+  const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus, selectedOrder: Order | null, setSelectedOrder: (order: Order | null) => void) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
@@ -200,9 +200,9 @@ export function useOrders(user: User | null) {
         variant: 'destructive',
       });
     }
-  };
+  }, [orders, user, toast]);
 
-  const handleSaveRepairDescription = async (orderId: string, description: string, selectedOrder: Order | null, setSelectedOrder: (order: Order | null) => void) => {
+  const handleSaveRepairDescription = useCallback(async (orderId: string, description: string, selectedOrder: Order | null, setSelectedOrder: (order: Order | null) => void) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
@@ -258,7 +258,7 @@ export function useOrders(user: User | null) {
         variant: 'destructive',
       });
     }
-  };
+  }, [orders, user, toast]);
 
   return {
     orders,

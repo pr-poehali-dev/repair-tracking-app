@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,42 +54,60 @@ export default function Index() {
   const { prices, addPrice, deletePrice } = useRepairPrices();
   const { chatMatches } = useChatSearch(searchQuery, user?.id);
 
-  const filteredOrders = filterOrders(orders, searchQuery, filterType, chatMatches);
-  const stats = calculateStats(orders);
-  const hasCriticalOverdue = hasCriticalOverdueOrders(orders, user?.username);
-  const criticalOrders = getCriticalOverdueOrders(orders, user?.username);
+  const filteredOrders = useMemo(
+    () => filterOrders(orders, searchQuery, filterType, chatMatches),
+    [orders, searchQuery, filterType, chatMatches]
+  );
+
+  const stats = useMemo(() => calculateStats(orders), [orders]);
   
-  const extensionRequests = orders
-    .filter(o => o.extensionRequest?.status === 'pending')
-    .map(o => ({
-      orderId: o.id,
-      deviceType: o.deviceType,
-      deviceModel: o.deviceModel,
-      requestedBy: o.extensionRequest!.requestedBy,
-      requestedAt: o.extensionRequest!.requestedAt,
-      reason: o.extensionRequest!.reason,
-      status: o.extensionRequest!.status,
-    }));
+  const hasCriticalOverdue = useMemo(
+    () => hasCriticalOverdueOrders(orders, user?.username),
+    [orders, user?.username]
+  );
+  
+  const criticalOrders = useMemo(
+    () => getCriticalOverdueOrders(orders, user?.username),
+    [orders, user?.username]
+  );
+  
+  const extensionRequests = useMemo(
+    () => orders
+      .filter(o => o.extensionRequest?.status === 'pending')
+      .map(o => ({
+        orderId: o.id,
+        deviceType: o.deviceType,
+        deviceModel: o.deviceModel,
+        requestedBy: o.extensionRequest!.requestedBy,
+        requestedAt: o.extensionRequest!.requestedAt,
+        reason: o.extensionRequest!.reason,
+        status: o.extensionRequest!.status,
+      })),
+    [orders]
+  );
 
-  const partsRequests = orders
-    .filter(o => o.partsRequest?.status === 'pending')
-    .map(o => ({
-      orderId: o.id,
-      deviceType: o.deviceType,
-      deviceModel: o.deviceModel,
-      requestedBy: o.partsRequest!.requestedBy,
-      requestedAt: o.partsRequest!.requestedAt,
-      description: o.partsRequest!.description,
-      status: o.partsRequest!.status,
-    }));
+  const partsRequests = useMemo(
+    () => orders
+      .filter(o => o.partsRequest?.status === 'pending')
+      .map(o => ({
+        orderId: o.id,
+        deviceType: o.deviceType,
+        deviceModel: o.deviceModel,
+        requestedBy: o.partsRequest!.requestedBy,
+        requestedAt: o.partsRequest!.requestedAt,
+        description: o.partsRequest!.description,
+        status: o.partsRequest!.status,
+      })),
+    [orders]
+  );
 
-  const onCreateOrder = async (formData: any) => {
+  const onCreateOrder = useCallback(async (formData: any) => {
     const newOrder = await handleCreateOrder(formData);
     setCreatedOrder(newOrder);
     setShowPrintConfirm(true);
-  };
+  }, [handleCreateOrder]);
 
-  const onStatusChange = (orderId: string, newStatus: any) => {
+  const onStatusChange = useCallback((orderId: string, newStatus: any) => {
     if (hasCriticalOverdue) {
       const isCriticalOrder = criticalOrders.some(o => o.id === orderId);
       if (!isCriticalOrder) {
@@ -97,15 +115,15 @@ export default function Index() {
       }
     }
     handleStatusChange(orderId, newStatus, selectedOrder, setSelectedOrder);
-  };
+  }, [hasCriticalOverdue, criticalOrders, handleStatusChange, selectedOrder]);
 
-  const onSaveRepairDescription = (orderId: string, description: string) => {
+  const onSaveRepairDescription = useCallback((orderId: string, description: string) => {
     handleSaveRepairDescription(orderId, description, selectedOrder, setSelectedOrder);
-  };
+  }, [handleSaveRepairDescription, selectedOrder]);
 
-  const onSavePartsRequest = (orderId: string, description: string) => {
+  const onSavePartsRequest = useCallback((orderId: string, description: string) => {
     console.log('Parts request for order:', orderId, description);
-  };
+  }, []);
 
   if (isLoading) {
     return (
