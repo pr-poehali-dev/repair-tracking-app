@@ -7,80 +7,22 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import AssignUserDialog from '@/components/AssignUserDialog';
 import RepairDescriptionDialog from '@/components/RepairDescriptionDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type OrderStatus = 
-  | 'received'
-  | 'diagnostics'
-  | 'repair'
-  | 'parts-needed'
-  | 'cost-approval'
-  | 'payment-pending'
-  | 'parts-delivery'
-  | 'parts-arrived'
-  | 'repair-continues'
-  | 'repair-completed'
-  | 'notify-client'
-  | 'client-notified'
-  | 'issued'
-  | 'stuck'
-  | 'disposal';
+import { Order, OrderStatus } from '@/components/order-details/types';
+import OrderStatusSection from '@/components/order-details/OrderStatusSection';
+import ClientInfoSection from '@/components/order-details/ClientInfoSection';
+import DeviceInfoSection from '@/components/order-details/DeviceInfoSection';
+import RepairInfoSection from '@/components/order-details/RepairInfoSection';
+import DelaySection from '@/components/order-details/DelaySection';
+import HistorySection from '@/components/order-details/HistorySection';
 
-interface OrderHistoryItem {
-  timestamp: string;
-  action: string;
-  user: string;
-  details?: string;
-}
-
-interface Order {
-  id: string;
-  clientName: string;
-  clientAddress: string;
-  clientPhone: string;
-  deviceType: string;
-  deviceModel: string;
-  serialNumber: string;
-  issue: string;
-  appearance: string;
-  accessories: string;
-  status: OrderStatus;
-  priority: 'low' | 'medium' | 'high';
-  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
-  createdAt: string;
-  createdTime: string;
-  price?: number;
-  master?: string;
-  repairDescription?: string;
-  history: OrderHistoryItem[];
-  isDelayed?: boolean;
-  delayReason?: string;
-  customDeadlineDays?: number;
-  extensionRequest?: {
-    requestedBy: string;
-    requestedAt: string;
-    reason: string;
-    status: 'pending' | 'approved' | 'rejected';
-    reviewedBy?: string;
-    reviewedAt?: string;
-  };
-}
+export type { OrderStatus };
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -91,13 +33,6 @@ interface OrderDetailsDialogProps {
   onStatusChange?: (orderId: string, status: OrderStatus) => void;
   onSaveRepairDescription?: (orderId: string, description: string) => void;
 }
-
-const repairTypeLabels = {
-  warranty: 'Гарантийный',
-  repeat: 'Повторный',
-  paid: 'Платный',
-  cashless: 'Безнал',
-};
 
 export default function OrderDetailsDialog({
   order,
@@ -118,67 +53,12 @@ export default function OrderDetailsDialog({
 
   if (!order) return null;
 
-  const requiresRepairDescription = (status: OrderStatus) => {
-    return ['notify-client', 'client-notified', 'issued', 'stuck', 'disposal'].includes(status);
-  };
-
-  const handleStatusChange = (newStatus: OrderStatus) => {
-    if (requiresRepairDescription(newStatus) && !order.repairDescription) {
-      toast({
-        title: 'Требуется описание ремонта',
-        description: 'Перед переводом в этот статус необходимо заполнить описание выполненного ремонта',
-        variant: 'destructive',
-      });
-      return;
-    }
-    if (onStatusChange) {
-      onStatusChange(order.id, newStatus);
-    }
-  };
-
   const handleSaveDescription = (description: string) => {
     if (onSaveRepairDescription) {
       onSaveRepairDescription(order.id, description);
       toast({
         title: 'Описание сохранено',
         description: 'Описание ремонта успешно добавлено',
-      });
-    }
-  };
-
-  const handleDelayChange = (checked: boolean) => {
-    if (checked) {
-      setIsDelayed(true);
-    } else {
-      setIsDelayed(false);
-      setDelayReason('');
-      toast({
-        title: 'Задержка снята',
-        description: 'Ремонт больше не отмечен как задержанный',
-      });
-    }
-  };
-
-  const handleSaveDelay = () => {
-    if (isDelayed && !delayReason.trim()) {
-      toast({
-        title: 'Ошибка',
-        description: 'Необходимо указать причину задержки ремонта',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (order.status === 'diagnostics' || order.status === 'repair') {
-      const statusLabel = order.status === 'diagnostics' ? 'диагностики' : 'ремонта';
-      toast({
-        title: 'Запрос отправлен',
-        description: `Запрос на продление срока ${statusLabel} отправлен директору на рассмотрение`,
-      });
-    } else {
-      toast({
-        title: 'Задержка сохранена',
-        description: 'Информация о задержке ремонта обновлена',
       });
     }
   };
@@ -203,347 +83,66 @@ export default function OrderDetailsDialog({
             </div>
           </DialogHeader>
 
-        <ScrollArea className="h-[70vh] pr-4">
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Badge className={statusConfig[order.status].color}>
-                    {statusConfig[order.status].label}
-                  </Badge>
-                  {hasPermission('change_status') && onStatusChange && (
-                    <Select value={order.status} onValueChange={(value) => handleStatusChange(value as OrderStatus)}>
-                      <SelectTrigger className="w-[220px] h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(statusConfig).map(([key, config]) => {
-                          const isDisabled = requiresRepairDescription(key as OrderStatus) && !order.repairDescription;
-                          return (
-                            <SelectItem key={key} value={key} disabled={isDisabled}>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
-                                {config.label}
-                                {isDisabled && <Icon name="Lock" size={12} className="ml-1 text-muted-foreground" />}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                <Badge variant="outline" className={priorityConfig[order.priority].color}>
-                  {priorityConfig[order.priority].label}
-                </Badge>
-              </div>
+          <ScrollArea className="h-[70vh] pr-4">
+            <div className="space-y-6">
+              <OrderStatusSection
+                order={order}
+                statusConfig={statusConfig}
+                priorityConfig={priorityConfig}
+                hasPermission={hasPermission}
+                customDeadline={customDeadline}
+                setCustomDeadline={setCustomDeadline}
+                onStatusChange={onStatusChange}
+              />
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Создан</p>
-                  <p className="font-medium">{order.createdAt} в {order.createdTime}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Вид ремонта</p>
-                  <p className="font-medium">{repairTypeLabels[order.repairType]}</p>
-                </div>
-              </div>
+              <Separator />
 
-              {hasPermission('approve_extensions') && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <Label htmlFor="custom-deadline" className="text-sm font-medium flex items-center gap-2 mb-2">
-                    <Icon name="Clock" size={16} />
-                    Индивидуальный срок выполнения
-                  </Label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      id="custom-deadline"
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={customDeadline}
-                      onChange={(e) => setCustomDeadline(e.target.value)}
-                      placeholder="Дни (по умолчанию 3)"
-                      className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <Button
-                      onClick={() => {
-                        const days = parseInt(customDeadline);
-                        if (days && days > 0 && days <= 30) {
-                          toast({
-                            title: 'Срок установлен',
-                            description: `Индивидуальный срок выполнения: ${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`,
-                          });
-                        } else {
-                          toast({
-                            title: 'Ошибка',
-                            description: 'Укажите срок от 1 до 30 дней',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}
-                      size="sm"
-                    >
-                      <Icon name="Check" size={16} className="mr-1" />
-                      Применить
-                    </Button>
-                  </div>
-                  {order.customDeadlineDays && (
-                    <p className="text-xs text-blue-700 mt-2">
-                      ⏱️ Установлен индивидуальный срок: {order.customDeadlineDays} {order.customDeadlineDays === 1 ? 'день' : order.customDeadlineDays < 5 ? 'дня' : 'дней'}
-                    </p>
-                  )}
-                </div>
-              )}
+              <ClientInfoSection order={order} />
+
+              <Separator />
+
+              <DeviceInfoSection order={order} />
+
+              <Separator />
+
+              <RepairInfoSection
+                order={order}
+                hasPermission={hasPermission}
+                onOpenRepairDesc={() => setIsRepairDescOpen(true)}
+              />
+
+              <Separator />
+
+              <DelaySection
+                order={order}
+                hasPermission={hasPermission}
+                isDelayed={isDelayed}
+                setIsDelayed={setIsDelayed}
+                delayReason={delayReason}
+                setDelayReason={setDelayReason}
+              />
+
+              <Separator />
+
+              <HistorySection order={order} />
             </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
-            <Separator />
+      <AssignUserDialog
+        orderId={order.id}
+        isOpen={isAssignUserOpen}
+        onClose={() => setIsAssignUserOpen(false)}
+      />
 
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Icon name="User" size={18} />
-                Информация о клиенте
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <p className="text-muted-foreground">ФИО</p>
-                  <p className="font-medium">{order.clientName}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Адрес</p>
-                  <p className="font-medium">{order.clientAddress}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Телефон</p>
-                  <p className="font-medium">{order.clientPhone}</p>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Icon name="Smartphone" size={18} />
-                Информация об устройстве
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Тип устройства</p>
-                  <p className="font-medium">{order.deviceType}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Модель</p>
-                  <p className="font-medium">{order.deviceModel}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Серийный номер</p>
-                  <p className="font-medium">{order.serialNumber}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Внешний вид</p>
-                  <p className="font-medium">{order.appearance}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Комплектация</p>
-                  <p className="font-medium">{order.accessories}</p>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Icon name="AlertCircle" size={18} />
-                Проблема
-              </h3>
-              <p className="text-sm bg-muted p-3 rounded-md">{order.issue}</p>
-            </div>
-
-            <Separator />
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Icon name="FileText" size={18} />
-                  Описание выполненного ремонта
-                </h3>
-                {hasPermission('edit_repair') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsRepairDescOpen(true)}
-                  >
-                    <Icon name={order.repairDescription ? "Edit" : "Plus"} size={16} className="mr-2" />
-                    {order.repairDescription ? 'Редактировать' : 'Добавить'}
-                  </Button>
-                )}
-              </div>
-              {order.repairDescription ? (
-                <p className="text-sm bg-green-50 border border-green-200 p-3 rounded-md whitespace-pre-wrap">{order.repairDescription}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                  Описание ремонта пока не добавлено. Необходимо заполнить перед завершением ремонта.
-                </p>
-              )}
-            </div>
-
-            <Separator />
-
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Icon name="Clock" size={18} />
-                Задержка ремонта
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="delay" 
-                    checked={isDelayed}
-                    onCheckedChange={handleDelayChange}
-                  />
-                  <Label 
-                    htmlFor="delay" 
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Отметить как задержанный ремонт
-                  </Label>
-                </div>
-                
-                {isDelayed && (
-                  <div className="space-y-2">
-                    <Label htmlFor="delayReason" className="text-sm font-medium">
-                      Причина задержки <span className="text-red-500">*</span>
-                    </Label>
-                    <Textarea
-                      id="delayReason"
-                      placeholder="Укажите причину задержки ремонта..."
-                      value={delayReason}
-                      onChange={(e) => setDelayReason(e.target.value)}
-                      className="min-h-[80px]"
-                    />
-                    {(order.status === 'diagnostics' || order.status === 'repair') && (
-                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-md text-sm text-blue-900">
-                        <Icon name="Info" size={14} className="inline mr-1" />
-                        При сохранении будет отправлен запрос директору на продление срока {order.status === 'diagnostics' ? 'диагностики' : 'ремонта'} на +3 дня
-                      </div>
-                    )}
-                    <Button 
-                      onClick={handleSaveDelay} 
-                      size="sm"
-                      className="mt-2"
-                    >
-                      <Icon name="Save" size={16} className="mr-2" />
-                      {(order.status === 'diagnostics' || order.status === 'repair') ? 'Запросить продление' : 'Сохранить задержку'}
-                    </Button>
-                  </div>
-                )}
-                
-                {order.extensionRequest && (
-                  <div className={`text-sm p-3 rounded-md border ${
-                    order.extensionRequest.status === 'pending' ? 'bg-yellow-50 border-yellow-200' :
-                    order.extensionRequest.status === 'approved' ? 'bg-green-50 border-green-200' :
-                    'bg-red-50 border-red-200'
-                  }`}>
-                    <p className="font-medium mb-1">
-                      {order.extensionRequest.status === 'pending' && '⏳ Запрос на рассмотрении'}
-                      {order.extensionRequest.status === 'approved' && '✅ Продление одобрено (+3 дня)'}
-                      {order.extensionRequest.status === 'rejected' && '❌ Продление отклонено'}
-                    </p>
-                    <p className="text-xs opacity-75">Причина: {order.extensionRequest.reason}</p>
-                    {order.extensionRequest.reviewedBy && (
-                      <p className="text-xs opacity-75 mt-1">
-                        Рассмотрел: {order.extensionRequest.reviewedBy} • {new Date(order.extensionRequest.reviewedAt!).toLocaleString('ru-RU')}
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                {order.delayReason && !isDelayed && (
-                  <div className="text-sm bg-amber-50 border border-amber-200 p-3 rounded-md">
-                    <p className="font-medium text-amber-900 mb-1">Предыдущая задержка:</p>
-                    <p className="text-amber-800">{order.delayReason}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {order.master && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Icon name="Wrench" size={18} />
-                    Мастер
-                  </h3>
-                  <p className="text-sm font-medium">{order.master}</p>
-                </div>
-              </>
-            )}
-
-            {order.price && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Icon name="Wallet" size={18} />
-                    Стоимость
-                  </h3>
-                  <p className="text-2xl font-bold text-green-600">
-                    {order.price.toLocaleString()} ₽
-                  </p>
-                </div>
-              </>
-            )}
-
-            <Separator />
-
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Icon name="History" size={18} />
-                История изменений
-              </h3>
-              <div className="space-y-3">
-                {order.history.map((item, index) => (
-                  <div key={index} className="flex gap-3 text-sm">
-                    <div className="flex flex-col items-center">
-                      <div className="h-2 w-2 rounded-full bg-primary mt-1.5" />
-                      {index < order.history.length - 1 && (
-                        <div className="w-px h-full bg-border mt-1" />
-                      )}
-                    </div>
-                    <div className="flex-1 pb-4">
-                      <p className="font-medium">{item.action}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {item.timestamp} • {item.user}
-                      </p>
-                      {item.details && (
-                        <p className="text-muted-foreground text-xs mt-1">{item.details}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
-
-    <AssignUserDialog
-      orderId={order.id}
-      isOpen={isAssignUserOpen}
-      onClose={() => setIsAssignUserOpen(false)}
-    />
-
-    <RepairDescriptionDialog
-      isOpen={isRepairDescOpen}
-      onClose={() => setIsRepairDescOpen(false)}
-      onSave={handleSaveDescription}
-      currentDescription={order.repairDescription}
-      orderNumber={order.id}
-    />
+      <RepairDescriptionDialog
+        orderId={order.id}
+        currentDescription={order.repairDescription || ''}
+        isOpen={isRepairDescOpen}
+        onClose={() => setIsRepairDescOpen(false)}
+        onSave={handleSaveDescription}
+      />
     </>
   );
 }
