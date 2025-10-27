@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
@@ -194,8 +193,8 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <div className="bg-primary p-2 rounded-lg">
               <Icon name="Plus" size={20} className="text-primary-foreground" />
@@ -207,9 +206,9 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <ScrollArea className="flex-1 px-6">
-            <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="space-y-6 py-2">
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Icon name="User" size={18} className="text-primary" />
@@ -409,9 +408,9 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
                 </div>
               </div>
             </div>
-          </ScrollArea>
+          </div>
 
-          <div className="flex gap-3 px-6 pb-6 pt-4 border-t bg-background">
+          <div className="flex gap-3 px-6 pb-6 pt-4 border-t bg-background shrink-0">
             <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Отмена
             </Button>
