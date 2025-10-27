@@ -34,8 +34,17 @@ export default function MasterStatsDialog({
   });
 
   const getMasterSalaryPercent = (): number => {
-    const saved = localStorage.getItem('masterSalaryPercent');
-    return saved ? parseInt(saved) : 50;
+    const individualSalaries = localStorage.getItem('individualMasterSalaries');
+    if (individualSalaries) {
+      const salaries = JSON.parse(individualSalaries);
+      const masterSalary = salaries.find((s: { masterName: string; percent: number }) => s.masterName === masterName);
+      if (masterSalary) {
+        return masterSalary.percent;
+      }
+    }
+    
+    const defaultPercent = localStorage.getItem('masterSalaryPercent');
+    return defaultPercent ? parseInt(defaultPercent) : 50;
   };
 
   const salaryPercent = getMasterSalaryPercent();
