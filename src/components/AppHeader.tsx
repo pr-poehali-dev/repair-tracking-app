@@ -28,6 +28,7 @@ interface AppHeaderProps {
   onPriceManagement?: () => void;
   onAdminSettings?: () => void;
   onMasterStats?: () => void;
+  onSalaryReport?: () => void;
 }
 
 export default function AppHeader({
@@ -43,6 +44,7 @@ export default function AppHeader({
   onPriceManagement,
   onAdminSettings,
   onMasterStats,
+  onSalaryReport,
 }: AppHeaderProps) {
   const { user, logout, hasPermission, hasRole } = useAuth();
   const [isAvatarUploadOpen, setIsAvatarUploadOpen] = useState(false);
@@ -182,6 +184,15 @@ export default function AppHeader({
                   <DropdownMenuItem onClick={onMasterStats}>
                     <Icon name="BarChart3" size={16} className="mr-2" />
                     Моя статистика
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {(hasRole('accountant') || hasRole('director')) && onSalaryReport && (
+                <>
+                  <DropdownMenuItem onClick={onSalaryReport}>
+                    <Icon name="FileSpreadsheet" size={16} className="mr-2" />
+                    Отчёт по зарплате
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>

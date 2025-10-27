@@ -45,6 +45,82 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         query_params = event.get('queryStringParameters', {}) or {}
         action = query_params.get('action')
         
+        if action == 'salary-report':
+            if method == 'GET':
+                master = query_params.get('master', '').strip()
+                start_date = query_params.get('startDate', '').strip()
+                end_date = query_params.get('endDate', '').strip()
+                
+                if not all([master, start_date, end_date]):
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Missing required parameters'})
+                    }
+                
+                cursor.execute('''
+                    SELECT 
+                        order_id,
+                        status,
+                        price,
+                        created_at,
+                        status_changed_at,
+                        history
+                    FROM orders
+                    WHERE master = %s
+                    AND status = 'issued'
+                    AND created_at::date >= %s::date
+                    AND status_changed_at::date <= %s::date
+                    ORDER BY created_at
+                ''', (master, start_date, end_date))
+                
+                orders = cursor.fetchall()
+                
+                repairs = []
+                total_salary = 0
+                total_days = 0
+                
+                for order in orders:
+                    salary = float(order['price']) if order['price'] else 0
+                    
+                    start = order['created_at']
+                    end = order['status_changed_at']
+                    
+                    if start and end:
+                        repair_days = (end - start).days
+                    else:
+                        repair_days = 0
+                    
+                    repairs.append({
+                        'orderId': order['order_id'],
+                        'startDate': start.isoformat() if start else None,
+                        'endDate': end.isoformat() if end else None,
+                        'salary': salary,
+                        'repairDays': repair_days
+                    })
+                    
+                    total_salary += salary
+                    total_days += repair_days
+                
+                total_repairs = len(repairs)
+                average_days = total_days / total_repairs if total_repairs > 0 else 0
+                
+                result = {
+                    'repairs': repairs,
+                    'summary': {
+                        'totalRepairs': total_repairs,
+                        'totalSalary': total_salary,
+                        'averageRepairDays': average_days
+                    }
+                }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps(result, ensure_ascii=False, default=decimal_default)
+                }
+        
         if action == 'search-chat':
             if method == 'GET':
                 search_query = query_params.get('q', '').strip()

@@ -16,6 +16,7 @@ import PartsRequestsDialog from '@/components/PartsRequestsDialog';
 import RepairPricesManagementDialog from '@/components/RepairPricesManagementDialog';
 import AdminSettingsDialog from '@/components/AdminSettingsDialog';
 import MasterStatsDialog from '@/components/MasterStatsDialog';
+import MasterSalaryReportDialog from '@/components/MasterSalaryReportDialog';
 import OrderList from '@/components/OrderList';
 import Icon from '@/components/ui/icon';
 import { useRepairPrices } from '@/hooks/useRepairPrices';
@@ -49,10 +50,16 @@ export default function Index() {
   const [isPriceManagementOpen, setIsPriceManagementOpen] = useState(false);
   const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(false);
   const [isMasterStatsOpen, setIsMasterStatsOpen] = useState(false);
+  const [isSalaryReportOpen, setIsSalaryReportOpen] = useState(false);
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
   const { prices, addPrice, deletePrice } = useRepairPrices();
   const { chatMatches } = useChatSearch(searchQuery, user?.id);
+
+  const masters = useMemo(
+    () => Array.from(new Set(orders.filter(o => o.master).map(o => o.master!))),
+    [orders]
+  );
 
   const filteredOrders = useMemo(
     () => filterOrders(orders, searchQuery, filterType, chatMatches),
@@ -148,6 +155,7 @@ export default function Index() {
         onPriceManagement={() => setIsPriceManagementOpen(true)}
         onAdminSettings={() => setIsAdminSettingsOpen(true)}
         onMasterStats={() => setIsMasterStatsOpen(true)}
+        onSalaryReport={() => setIsSalaryReportOpen(true)}
       />
 
       <main className={activeView === 'kanban' ? 'w-full p-4 space-y-6' : 'max-w-7xl mx-auto p-4 space-y-6'}>
@@ -355,6 +363,12 @@ export default function Index() {
         onOpenChange={setIsMasterStatsOpen}
         orders={orders}
         masterName={user?.fullName || ''}
+      />
+
+      <MasterSalaryReportDialog
+        open={isSalaryReportOpen}
+        onOpenChange={setIsSalaryReportOpen}
+        masters={masters}
       />
     </div>
   );
