@@ -69,13 +69,13 @@ export default function KanbanBoard({
   };
 
   return (
-    <div className="overflow-x-auto">
-      <div className="inline-flex gap-4 min-w-full pb-4" style={{ minWidth: 'max-content' }}>
+    <div className="overflow-x-auto -mx-4 px-4">
+      <div className="inline-flex gap-4 pb-4" style={{ minWidth: '100%' }}>
         {columns.map((status) => {
           const columnOrders = getOrdersByStatus(status);
           return (
-            <div key={status} className="space-y-3" style={{ minWidth: '280px' }}>
-              <div className="flex items-center justify-between sticky top-0 bg-background pb-2">
+            <div key={status} className="space-y-3 flex-shrink-0" style={{ width: '300px' }}>
+              <div className="flex items-center justify-between sticky top-0 bg-background pb-2 z-10">
                 <h3 className="font-semibold text-sm">{statusConfig[status].label}</h3>
                 <Badge variant="secondary">{columnOrders.length}</Badge>
               </div>

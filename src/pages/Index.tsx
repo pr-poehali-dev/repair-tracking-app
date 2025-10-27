@@ -126,7 +126,7 @@ export default function Index() {
         onMasterStats={() => setIsMasterStatsOpen(true)}
       />
 
-      <main className="max-w-7xl mx-auto p-4 space-y-6">
+      <main className={activeView === 'kanban' ? 'w-full p-4 space-y-6' : 'max-w-7xl mx-auto p-4 space-y-6'}>
         {hasCriticalOverdue && (
           <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 flex items-start gap-3">
             <Icon name="AlertTriangle" className="text-red-600 mt-0.5" size={24} />
