@@ -258,7 +258,7 @@ const getUrgencyScore = (order: Order): number => {
 
 export const hasCriticalOverdueOrders = (orders: Order[], masterName?: string): boolean => {
   return orders.some(order => 
-    order.status === 'diagnostics' && 
+    (order.status === 'diagnostics' || order.status === 'repair') && 
     order.master === masterName &&
     getDeadlineStatus(order) === 'overdue'
   );
@@ -266,7 +266,7 @@ export const hasCriticalOverdueOrders = (orders: Order[], masterName?: string): 
 
 export const getCriticalOverdueOrders = (orders: Order[], masterName?: string): Order[] => {
   return orders.filter(order => 
-    order.status === 'diagnostics' && 
+    (order.status === 'diagnostics' || order.status === 'repair') && 
     order.master === masterName &&
     getDeadlineStatus(order) === 'overdue'
   );

@@ -167,10 +167,11 @@ export default function OrderDetailsDialog({
       return;
     }
     
-    if (order.status === 'diagnostics') {
+    if (order.status === 'diagnostics' || order.status === 'repair') {
+      const statusLabel = order.status === 'diagnostics' ? 'диагностики' : 'ремонта';
       toast({
         title: 'Запрос отправлен',
-        description: 'Запрос на продление срока диагностики отправлен директору на рассмотрение',
+        description: `Запрос на продление срока ${statusLabel} отправлен директору на рассмотрение`,
       });
     } else {
       toast({
@@ -373,10 +374,10 @@ export default function OrderDetailsDialog({
                       onChange={(e) => setDelayReason(e.target.value)}
                       className="min-h-[80px]"
                     />
-                    {order.status === 'diagnostics' && (
+                    {(order.status === 'diagnostics' || order.status === 'repair') && (
                       <div className="bg-blue-50 border border-blue-200 p-3 rounded-md text-sm text-blue-900">
                         <Icon name="Info" size={14} className="inline mr-1" />
-                        При сохранении будет отправлен запрос директору на продление срока диагностики на +3 дня
+                        При сохранении будет отправлен запрос директору на продление срока {order.status === 'diagnostics' ? 'диагностики' : 'ремонта'} на +3 дня
                       </div>
                     )}
                     <Button 
@@ -385,7 +386,7 @@ export default function OrderDetailsDialog({
                       className="mt-2"
                     >
                       <Icon name="Save" size={16} className="mr-2" />
-                      {order.status === 'diagnostics' ? 'Запросить продление' : 'Сохранить задержку'}
+                      {(order.status === 'diagnostics' || order.status === 'repair') ? 'Запросить продление' : 'Сохранить задержку'}
                     </Button>
                   </div>
                 )}

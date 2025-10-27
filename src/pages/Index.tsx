@@ -104,7 +104,7 @@ export default function Index() {
                 Блокировка работы с новыми заказами
               </h3>
               <p className="text-sm text-red-800 mb-2">
-                У вас есть {criticalOrders.length} {criticalOrders.length === 1 ? 'заказ' : 'заказа'} в статусе "Диагностика" с превышением срока 3 дня. 
+                У вас есть {criticalOrders.length} {criticalOrders.length === 1 ? 'заказ' : 'заказа'} в статусе "Диагностика" или "Ремонт" с превышением срока 3 дня. 
                 Необходимо завершить работу с этими заказами перед началом работы с другими заявками.
               </p>
               <div className="flex flex-wrap gap-2">
