@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-import { useDeviceTypes } from '@/hooks/useDeviceTypes';
 import { useRepairPrices } from '@/hooks/useRepairPrices';
 
 interface DatabasesManagementProps {
@@ -13,7 +12,6 @@ export default function DatabasesManagement({
   onOpenDeviceTypes,
   onOpenPriceManagement,
 }: DatabasesManagementProps) {
-  const { deviceTypes } = useDeviceTypes();
   const { prices } = useRepairPrices();
 
   const databases = [
@@ -22,7 +20,7 @@ export default function DatabasesManagement({
       icon: 'Wrench' as const,
       title: 'Типы устройств',
       description: 'Справочник типов техники, марок и моделей',
-      count: deviceTypes.length,
+      count: 0,
       countLabel: 'типов техники',
       color: 'bg-blue-50 text-blue-600 border-blue-200',
       onClick: onOpenDeviceTypes,
