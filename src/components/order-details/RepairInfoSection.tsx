@@ -3,6 +3,7 @@ import Icon from '@/components/ui/icon';
 
 interface Order {
   id: string;
+  deviceType: string;
   price?: number;
   master?: string;
   repairDescription?: string;
@@ -12,12 +13,14 @@ interface RepairInfoSectionProps {
   order: Order;
   hasPermission: (permission: string) => boolean;
   onOpenRepairDesc: () => void;
+  onOpenPriceList: () => void;
 }
 
 export default function RepairInfoSection({
   order,
   hasPermission,
   onOpenRepairDesc,
+  onOpenPriceList,
 }: RepairInfoSectionProps) {
   return (
     <div>
@@ -44,17 +47,28 @@ export default function RepairInfoSection({
             <p className="font-medium whitespace-pre-wrap">{order.repairDescription}</p>
           </div>
         )}
-        {hasPermission('change_status') && (
+        <div className="flex gap-2 mt-3">
           <Button
             variant="outline"
             size="sm"
-            onClick={onOpenRepairDesc}
-            className="mt-2"
+            onClick={onOpenPriceList}
+            className="flex-1"
           >
-            <Icon name="FileEdit" size={16} className="mr-2" />
-            {order.repairDescription ? 'Редактировать описание' : 'Добавить описание'}
+            <Icon name="Receipt" size={16} className="mr-2" />
+            Прайс-лист
           </Button>
-        )}
+          {hasPermission('change_status') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenRepairDesc}
+              className="flex-1"
+            >
+              <Icon name="FileEdit" size={16} className="mr-2" />
+              {order.repairDescription ? 'Изменить описание' : 'Добавить описание'}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

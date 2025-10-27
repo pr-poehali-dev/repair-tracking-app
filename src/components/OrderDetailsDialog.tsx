@@ -12,7 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import AssignUserDialog from '@/components/AssignUserDialog';
 import RepairDescriptionDialog from '@/components/RepairDescriptionDialog';
+import RepairPricesDialog from '@/components/RepairPricesDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRepairPrices } from '@/hooks/useRepairPrices';
 
 import { Order, OrderStatus } from '@/components/order-details/types';
 import OrderStatusSection from '@/components/order-details/OrderStatusSection';
@@ -48,8 +50,10 @@ export default function OrderDetailsDialog({
 }: OrderDetailsDialogProps) {
   const { hasPermission } = useAuth();
   const { toast } = useToast();
+  const { prices, addPrice, deletePrice } = useRepairPrices();
   const [isAssignUserOpen, setIsAssignUserOpen] = useState(false);
   const [isRepairDescOpen, setIsRepairDescOpen] = useState(false);
+  const [isPriceListOpen, setIsPriceListOpen] = useState(false);
   const [isDelayed, setIsDelayed] = useState(order?.isDelayed || false);
   const [delayReason, setDelayReason] = useState(order?.delayReason || '');
   const [customDeadline, setCustomDeadline] = useState(order?.customDeadlineDays?.toString() || '');
@@ -118,6 +122,7 @@ export default function OrderDetailsDialog({
                 order={order}
                 hasPermission={hasPermission}
                 onOpenRepairDesc={() => setIsRepairDescOpen(true)}
+                onOpenPriceList={() => setIsPriceListOpen(true)}
               />
 
               <Separator />
@@ -159,6 +164,19 @@ export default function OrderDetailsDialog({
         isOpen={isRepairDescOpen}
         onClose={() => setIsRepairDescOpen(false)}
         onSave={handleSaveDescription}
+      />
+
+      <RepairPricesDialog
+        isOpen={isPriceListOpen}
+        onClose={() => setIsPriceListOpen(false)}
+        deviceType={order.deviceType}
+        prices={prices}
+        canEdit={hasPermission('edit_finance')}
+        onAddPrice={addPrice}
+        onDeletePrice={deletePrice}
+        onSelectPrice={(price) => {
+          console.log('Selected price:', price);
+        }}
       />
     </>
   );

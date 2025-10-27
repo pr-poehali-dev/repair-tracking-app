@@ -23,6 +23,7 @@ interface AppHeaderProps {
   pendingRequestsCount?: number;
   onPartsRequests?: () => void;
   pendingPartsCount?: number;
+  onPriceManagement?: () => void;
 }
 
 export default function AppHeader({
@@ -35,6 +36,7 @@ export default function AppHeader({
   pendingRequestsCount = 0,
   onPartsRequests,
   pendingPartsCount = 0,
+  onPriceManagement,
 }: AppHeaderProps) {
   const { user, logout, hasPermission } = useAuth();
 
@@ -117,6 +119,12 @@ export default function AppHeader({
                 <DropdownMenuItem onClick={onDeviceTypes}>
                   <Icon name="Wrench" size={16} className="mr-2" />
                   Типы устройств
+                </DropdownMenuItem>
+              )}
+              {hasPermission('edit_finance') && onPriceManagement && (
+                <DropdownMenuItem onClick={onPriceManagement}>
+                  <Icon name="DollarSign" size={16} className="mr-2" />
+                  База стоимостей
                 </DropdownMenuItem>
               )}
               {hasPermission('view_clients') && (

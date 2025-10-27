@@ -12,8 +12,10 @@ import ClientsSearchDialog from '@/components/ClientsSearchDialog';
 import AppHeader from '@/components/AppHeader';
 import ExtensionRequestsDialog from '@/components/ExtensionRequestsDialog';
 import PartsRequestsDialog from '@/components/PartsRequestsDialog';
+import RepairPricesManagementDialog from '@/components/RepairPricesManagementDialog';
 import OrderList from '@/components/OrderList';
 import Icon from '@/components/ui/icon';
+import { useRepairPrices } from '@/hooks/useRepairPrices';
 import { useOrders } from '@/hooks/useOrders';
 import { 
   Order, 
@@ -38,8 +40,10 @@ export default function Index() {
   const [isClientsSearchOpen, setIsClientsSearchOpen] = useState(false);
   const [isExtensionRequestsOpen, setIsExtensionRequestsOpen] = useState(false);
   const [isPartsRequestsOpen, setIsPartsRequestsOpen] = useState(false);
+  const [isPriceManagementOpen, setIsPriceManagementOpen] = useState(false);
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
+  const { prices, addPrice, deletePrice } = useRepairPrices();
 
   const filteredOrders = filterOrders(orders, searchQuery, filterType);
   const stats = calculateStats(orders);
@@ -113,6 +117,7 @@ export default function Index() {
         pendingRequestsCount={extensionRequests.length}
         onPartsRequests={() => setIsPartsRequestsOpen(true)}
         pendingPartsCount={partsRequests.length}
+        onPriceManagement={() => setIsPriceManagementOpen(true)}
       />
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
@@ -281,6 +286,14 @@ export default function Index() {
         onComplete={(orderId) => {
           console.log('Parts completed for order:', orderId);
         }}
+      />
+
+      <RepairPricesManagementDialog
+        isOpen={isPriceManagementOpen}
+        onClose={() => setIsPriceManagementOpen(false)}
+        prices={prices}
+        onAddPrice={addPrice}
+        onDeletePrice={deletePrice}
       />
     </div>
   );
