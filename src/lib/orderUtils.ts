@@ -32,6 +32,7 @@ export interface Order {
   isOverdue?: boolean;
   isDelayed?: boolean;
   delayReason?: string;
+  customDeadlineDays?: number;
   extensionRequest?: {
     requestedBy: string;
     requestedAt: string;
@@ -157,8 +158,15 @@ export const statusDeadlineHours: Record<OrderStatus, number> = {
   'disposal': 0,
 };
 
-export const calculateStatusDeadline = (status: OrderStatus): string => {
-  const hours = statusDeadlineHours[status] || 24;
+export const calculateStatusDeadline = (status: OrderStatus, customDays?: number): string => {
+  let hours: number;
+  
+  if (customDays && customDays > 0) {
+    hours = customDays * 24;
+  } else {
+    hours = statusDeadlineHours[status] || 24;
+  }
+  
   const deadline = new Date();
   deadline.setHours(deadline.getHours() + hours);
   return deadline.toISOString();

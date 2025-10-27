@@ -71,6 +71,7 @@ interface Order {
   history: OrderHistoryItem[];
   isDelayed?: boolean;
   delayReason?: string;
+  customDeadlineDays?: number;
   extensionRequest?: {
     requestedBy: string;
     requestedAt: string;
@@ -113,6 +114,7 @@ export default function OrderDetailsDialog({
   const [isRepairDescOpen, setIsRepairDescOpen] = useState(false);
   const [isDelayed, setIsDelayed] = useState(order?.isDelayed || false);
   const [delayReason, setDelayReason] = useState(order?.delayReason || '');
+  const [customDeadline, setCustomDeadline] = useState(order?.customDeadlineDays?.toString() || '');
 
   if (!order) return null;
 
@@ -246,6 +248,53 @@ export default function OrderDetailsDialog({
                   <p className="font-medium">{repairTypeLabels[order.repairType]}</p>
                 </div>
               </div>
+
+              {hasPermission('approve_extensions') && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <Label htmlFor="custom-deadline" className="text-sm font-medium flex items-center gap-2 mb-2">
+                    <Icon name="Clock" size={16} />
+                    Индивидуальный срок выполнения
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      id="custom-deadline"
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={customDeadline}
+                      onChange={(e) => setCustomDeadline(e.target.value)}
+                      placeholder="Дни (по умолчанию 3)"
+                      className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <Button
+                      onClick={() => {
+                        const days = parseInt(customDeadline);
+                        if (days && days > 0 && days <= 30) {
+                          toast({
+                            title: 'Срок установлен',
+                            description: `Индивидуальный срок выполнения: ${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`,
+                          });
+                        } else {
+                          toast({
+                            title: 'Ошибка',
+                            description: 'Укажите срок от 1 до 30 дней',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                      size="sm"
+                    >
+                      <Icon name="Check" size={16} className="mr-1" />
+                      Применить
+                    </Button>
+                  </div>
+                  {order.customDeadlineDays && (
+                    <p className="text-xs text-blue-700 mt-2">
+                      ⏱️ Установлен индивидуальный срок: {order.customDeadlineDays} {order.customDeadlineDays === 1 ? 'день' : order.customDeadlineDays < 5 ? 'дня' : 'дней'}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <Separator />
