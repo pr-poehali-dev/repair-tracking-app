@@ -76,14 +76,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_API_URL = 'https://functions.poehali.dev/40ac4257-e65a-4139-9f49-415c6ed50616';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        return JSON.parse(savedUser);
+      } catch {
+        localStorage.removeItem('currentUser');
+        return null;
+      }
     }
-  }, []);
+    return null;
+  });
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
