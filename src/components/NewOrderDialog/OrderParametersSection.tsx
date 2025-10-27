@@ -18,7 +18,7 @@ export default function OrderParametersSection({
         <Icon name="Settings" size={18} className="text-primary" />
         Параметры заказа
       </h3>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div>
           <Label htmlFor="repairType">Вид ремонта</Label>
           <Select value={formData.repairType} onValueChange={(value: string) => onChange('repairType', value)}>
@@ -31,20 +31,6 @@ export default function OrderParametersSection({
               <SelectItem value="paid">Платный</SelectItem>
               <SelectItem value="cashless">Безнал</SelectItem>
               <SelectItem value="our-device">Наша техника</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="priority">Приоритет</Label>
-          <Select value={formData.priority} onValueChange={(value: string) => onChange('priority', value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Низкий</SelectItem>
-              <SelectItem value="medium">Средний</SelectItem>
-              <SelectItem value="high">Высокий</SelectItem>
             </SelectContent>
           </Select>
         </div>

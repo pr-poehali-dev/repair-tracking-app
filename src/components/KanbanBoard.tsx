@@ -23,7 +23,6 @@ interface Order {
   appearance: string;
   accessories: string;
   status: OrderStatus;
-  priority: 'low' | 'medium' | 'high';
   repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   createdAt: string;
   createdTime: string;
@@ -34,7 +33,6 @@ interface Order {
 interface KanbanBoardProps {
   orders: Order[];
   statusConfig: Record<OrderStatus, { label: string; color: string }>;
-  priorityConfig: Record<string, { label: string; color: string }>;
   onViewDetails: (order: Order) => void;
   onStatusChange: (orderId: string, status: OrderStatus) => void;
 }
@@ -42,7 +40,6 @@ interface KanbanBoardProps {
 export default function KanbanBoard({
   orders,
   statusConfig,
-  priorityConfig,
   onViewDetails,
   onStatusChange,
 }: KanbanBoardProps) {

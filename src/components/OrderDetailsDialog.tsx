@@ -34,7 +34,6 @@ interface OrderDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   statusConfig: Record<OrderStatus, { label: string; color: string }>;
-  priorityConfig: Record<string, { label: string; color: string }>;
   onStatusChange?: (orderId: string, status: OrderStatus) => void;
   onSaveRepairDescription?: (orderId: string, description: string) => void;
   onSavePartsRequest?: (orderId: string, description: string) => void;
@@ -45,7 +44,6 @@ export default function OrderDetailsDialog({
   isOpen,
   onClose,
   statusConfig,
-  priorityConfig,
   onStatusChange,
   onSaveRepairDescription,
   onSavePartsRequest,
@@ -103,7 +101,6 @@ export default function OrderDetailsDialog({
               <OrderStatusSection
                 order={order}
                 statusConfig={statusConfig}
-                priorityConfig={priorityConfig}
                 hasPermission={hasPermission}
                 customDeadline={customDeadline}
                 setCustomDeadline={setCustomDeadline}

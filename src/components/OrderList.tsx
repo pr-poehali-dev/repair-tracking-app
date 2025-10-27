@@ -1,5 +1,5 @@
 import OrderCard, { OrderStatus } from '@/components/OrderCard';
-import { Order, statusConfig, priorityConfig } from '@/lib/orderUtils';
+import { Order, statusConfig } from '@/lib/orderUtils';
 
 interface OrderListProps {
   orders: Order[];
@@ -31,7 +31,6 @@ export default function OrderList({
           key={order.id}
           order={order}
           statusConfig={statusConfig}
-          priorityConfig={priorityConfig}
           onViewDetails={onViewDetails}
           onViewReceipt={onViewReceipt}
           onStatusChange={onStatusChange}

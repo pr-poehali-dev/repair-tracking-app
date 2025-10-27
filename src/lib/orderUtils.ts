@@ -19,7 +19,6 @@ export interface Order {
   appearance: string;
   accessories: string;
   status: OrderStatus;
-  priority: 'low' | 'medium' | 'high';
   repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   createdAt: string;
   createdTime: string;
@@ -140,11 +139,7 @@ export const statusConfig = {
   disposal: { label: 'Утилизация', color: 'bg-gray-100 text-gray-700 border-gray-200' },
 };
 
-export const priorityConfig = {
-  low: { label: 'Низкий', color: 'bg-slate-100 text-slate-700' },
-  medium: { label: 'Средний', color: 'bg-blue-100 text-blue-700' },
-  high: { label: 'Высокий', color: 'bg-orange-100 text-orange-700' },
-};
+
 
 export const statusDeadlineHours: Record<OrderStatus, number> = {
   'received': 2,

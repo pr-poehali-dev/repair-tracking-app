@@ -44,7 +44,6 @@ interface Order {
   appearance: string;
   accessories: string;
   status: OrderStatus;
-  priority: 'low' | 'medium' | 'high';
   repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   createdAt: string;
   createdTime: string;
@@ -60,7 +59,6 @@ interface Order {
 interface OrderCardProps {
   order: Order;
   statusConfig: Record<OrderStatus, { label: string; color: string }>;
-  priorityConfig: Record<string, { label: string; color: string }>;
   onViewDetails: (order: Order) => void;
   onViewReceipt: (order: Order) => void;
   onStatusChange: (orderId: string, status: OrderStatus) => void;
@@ -70,7 +68,6 @@ interface OrderCardProps {
 export default function OrderCard({
   order,
   statusConfig,
-  priorityConfig,
   onViewDetails,
   onViewReceipt,
   onStatusChange,
@@ -166,9 +163,6 @@ export default function OrderCard({
 
           <div className="flex items-center justify-between pt-2">
             <div className="flex gap-2">
-              <Badge variant="outline" className={priorityConfig[order.priority].color}>
-                {priorityConfig[order.priority].label}
-              </Badge>
               {order.price && (
                 <Badge variant="outline" className="bg-green-50 text-green-700">
                   {order.price.toLocaleString()} ₽

@@ -25,7 +25,6 @@ import { useChatSearch } from '@/hooks/useChatSearch';
 import { 
   Order, 
   statusConfig, 
-  priorityConfig, 
   getNextStatus, 
   calculateStats, 
   filterOrders,
@@ -261,7 +260,6 @@ export default function Index() {
             <KanbanBoard
               orders={filteredOrders}
               statusConfig={statusConfig}
-              priorityConfig={priorityConfig}
               onViewDetails={setSelectedOrder}
               onStatusChange={onStatusChange}
             />
@@ -290,7 +288,6 @@ export default function Index() {
         isOpen={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
         statusConfig={statusConfig}
-        priorityConfig={priorityConfig}
         onStatusChange={onStatusChange}
         onSaveRepairDescription={onSaveRepairDescription}
         onSavePartsRequest={onSavePartsRequest}

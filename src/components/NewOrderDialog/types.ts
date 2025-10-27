@@ -26,7 +26,6 @@ export interface NewOrderFormData {
   issue: string;
   appearance: string;
   accessories: string;
-  priority: 'low' | 'medium' | 'high';
   repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   receivedDate?: string;
   purchasePrice?: number;

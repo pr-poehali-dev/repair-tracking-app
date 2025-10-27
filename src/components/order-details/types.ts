@@ -34,7 +34,6 @@ export interface Order {
   appearance: string;
   accessories: string;
   status: OrderStatus;
-  priority: 'low' | 'medium' | 'high';
   repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
   createdAt: string;
   createdTime: string;
