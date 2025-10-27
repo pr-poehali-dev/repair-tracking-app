@@ -21,6 +21,8 @@ interface AppHeaderProps {
   onClientsSearch: () => void;
   onExtensionRequests?: () => void;
   pendingRequestsCount?: number;
+  onPartsRequests?: () => void;
+  pendingPartsCount?: number;
 }
 
 export default function AppHeader({
@@ -31,6 +33,8 @@ export default function AppHeader({
   onClientsSearch,
   onExtensionRequests,
   pendingRequestsCount = 0,
+  onPartsRequests,
+  pendingPartsCount = 0,
 }: AppHeaderProps) {
   const { user, logout, hasPermission } = useAuth();
 
@@ -79,6 +83,22 @@ export default function AppHeader({
               {pendingRequestsCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
                   {pendingRequestsCount}
+                </span>
+              )}
+            </Button>
+          )}
+
+          {hasPermission('manage_parts') && onPartsRequests && (
+            <Button 
+              onClick={onPartsRequests}
+              variant="outline"
+              className="relative"
+            >
+              <Icon name="Package" size={18} className="mr-2" />
+              Запчасти
+              {pendingPartsCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">
+                  {pendingPartsCount}
                 </span>
               )}
             </Button>

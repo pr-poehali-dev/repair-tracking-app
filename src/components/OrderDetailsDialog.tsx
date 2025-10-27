@@ -20,6 +20,7 @@ import ClientInfoSection from '@/components/order-details/ClientInfoSection';
 import DeviceInfoSection from '@/components/order-details/DeviceInfoSection';
 import RepairInfoSection from '@/components/order-details/RepairInfoSection';
 import DelaySection from '@/components/order-details/DelaySection';
+import PartsRequestSection from '@/components/order-details/PartsRequestSection';
 import HistorySection from '@/components/order-details/HistorySection';
 
 export type { OrderStatus };
@@ -32,6 +33,7 @@ interface OrderDetailsDialogProps {
   priorityConfig: Record<string, { label: string; color: string }>;
   onStatusChange?: (orderId: string, status: OrderStatus) => void;
   onSaveRepairDescription?: (orderId: string, description: string) => void;
+  onSavePartsRequest?: (orderId: string, description: string) => void;
 }
 
 export default function OrderDetailsDialog({
@@ -42,6 +44,7 @@ export default function OrderDetailsDialog({
   priorityConfig,
   onStatusChange,
   onSaveRepairDescription,
+  onSavePartsRequest,
 }: OrderDetailsDialogProps) {
   const { hasPermission } = useAuth();
   const { toast } = useToast();
@@ -60,6 +63,12 @@ export default function OrderDetailsDialog({
         title: 'Описание сохранено',
         description: 'Описание ремонта успешно добавлено',
       });
+    }
+  };
+
+  const handleSavePartsRequest = (orderId: string, description: string) => {
+    if (onSavePartsRequest) {
+      onSavePartsRequest(orderId, description);
     }
   };
 
@@ -120,6 +129,14 @@ export default function OrderDetailsDialog({
                 setIsDelayed={setIsDelayed}
                 delayReason={delayReason}
                 setDelayReason={setDelayReason}
+              />
+
+              <Separator />
+
+              <PartsRequestSection
+                order={order}
+                hasPermission={hasPermission}
+                onSavePartsRequest={handleSavePartsRequest}
               />
 
               <Separator />

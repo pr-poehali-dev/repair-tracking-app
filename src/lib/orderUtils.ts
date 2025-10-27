@@ -33,6 +33,12 @@ export interface Order {
   isDelayed?: boolean;
   delayReason?: string;
   customDeadlineDays?: number;
+  partsRequest?: {
+    requestedBy: string;
+    requestedAt: string;
+    description: string;
+    status: 'pending' | 'in-progress' | 'completed';
+  };
   extensionRequest?: {
     requestedBy: string;
     requestedAt: string;

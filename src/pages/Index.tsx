@@ -11,6 +11,7 @@ import DeviceTypesDialog from '@/components/DeviceTypesDialog';
 import ClientsSearchDialog from '@/components/ClientsSearchDialog';
 import AppHeader from '@/components/AppHeader';
 import ExtensionRequestsDialog from '@/components/ExtensionRequestsDialog';
+import PartsRequestsDialog from '@/components/PartsRequestsDialog';
 import OrderList from '@/components/OrderList';
 import Icon from '@/components/ui/icon';
 import { useOrders } from '@/hooks/useOrders';
@@ -36,6 +37,7 @@ export default function Index() {
   const [isDeviceTypesOpen, setIsDeviceTypesOpen] = useState(false);
   const [isClientsSearchOpen, setIsClientsSearchOpen] = useState(false);
   const [isExtensionRequestsOpen, setIsExtensionRequestsOpen] = useState(false);
+  const [isPartsRequestsOpen, setIsPartsRequestsOpen] = useState(false);
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
 
@@ -54,6 +56,18 @@ export default function Index() {
       requestedAt: o.extensionRequest!.requestedAt,
       reason: o.extensionRequest!.reason,
       status: o.extensionRequest!.status,
+    }));
+
+  const partsRequests = orders
+    .filter(o => o.partsRequest?.status === 'pending')
+    .map(o => ({
+      orderId: o.id,
+      deviceType: o.deviceType,
+      deviceModel: o.deviceModel,
+      requestedBy: o.partsRequest!.requestedBy,
+      requestedAt: o.partsRequest!.requestedAt,
+      description: o.partsRequest!.description,
+      status: o.partsRequest!.status,
     }));
 
   const onCreateOrder = async (formData: any) => {
@@ -75,6 +89,10 @@ export default function Index() {
     handleSaveRepairDescription(orderId, description, selectedOrder, setSelectedOrder);
   };
 
+  const onSavePartsRequest = (orderId: string, description: string) => {
+    console.log('Parts request for order:', orderId, description);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -93,6 +111,8 @@ export default function Index() {
         onClientsSearch={() => setIsClientsSearchOpen(true)}
         onExtensionRequests={() => setIsExtensionRequestsOpen(true)}
         pendingRequestsCount={extensionRequests.length}
+        onPartsRequests={() => setIsPartsRequestsOpen(true)}
+        pendingPartsCount={partsRequests.length}
       />
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
@@ -230,6 +250,7 @@ export default function Index() {
         priorityConfig={priorityConfig}
         onStatusChange={onStatusChange}
         onSaveRepairDescription={onSaveRepairDescription}
+        onSavePartsRequest={onSavePartsRequest}
       />
 
       <ReceiptDialog order={receiptOrder} onClose={() => setReceiptOrder(null)} />
@@ -247,6 +268,18 @@ export default function Index() {
         }}
         onReject={(orderId) => {
           console.log('Rejected extension for order:', orderId);
+        }}
+      />
+
+      <PartsRequestsDialog
+        open={isPartsRequestsOpen}
+        onOpenChange={setIsPartsRequestsOpen}
+        requests={partsRequests}
+        onStartProcessing={(orderId) => {
+          console.log('Start processing parts for order:', orderId);
+        }}
+        onComplete={(orderId) => {
+          console.log('Parts completed for order:', orderId);
         }}
       />
     </div>
