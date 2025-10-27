@@ -24,6 +24,7 @@ interface AppHeaderProps {
   onPartsRequests?: () => void;
   pendingPartsCount?: number;
   onPriceManagement?: () => void;
+  onAdminSettings?: () => void;
 }
 
 export default function AppHeader({
@@ -37,6 +38,7 @@ export default function AppHeader({
   onPartsRequests,
   pendingPartsCount = 0,
   onPriceManagement,
+  onAdminSettings,
 }: AppHeaderProps) {
   const { user, logout, hasPermission } = useAuth();
 
@@ -115,13 +117,20 @@ export default function AppHeader({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Настройки</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {hasPermission('manage_device_types') && (
+              {hasRole('director') && onAdminSettings && (
+                <DropdownMenuItem onClick={onAdminSettings}>
+                  <Icon name="Shield" size={16} className="mr-2" />
+                  Панель администратора
+                </DropdownMenuItem>
+              )}
+              {hasRole('director') && <DropdownMenuSeparator />}
+              {hasPermission('manage_device_types') && !hasRole('director') && (
                 <DropdownMenuItem onClick={onDeviceTypes}>
                   <Icon name="Wrench" size={16} className="mr-2" />
                   Типы устройств
                 </DropdownMenuItem>
               )}
-              {hasPermission('edit_finance') && onPriceManagement && (
+              {hasPermission('edit_finance') && !hasRole('director') && onPriceManagement && (
                 <DropdownMenuItem onClick={onPriceManagement}>
                   <Icon name="DollarSign" size={16} className="mr-2" />
                   База стоимостей

@@ -13,6 +13,7 @@ import AppHeader from '@/components/AppHeader';
 import ExtensionRequestsDialog from '@/components/ExtensionRequestsDialog';
 import PartsRequestsDialog from '@/components/PartsRequestsDialog';
 import RepairPricesManagementDialog from '@/components/RepairPricesManagementDialog';
+import AdminSettingsDialog from '@/components/AdminSettingsDialog';
 import OrderList from '@/components/OrderList';
 import Icon from '@/components/ui/icon';
 import { useRepairPrices } from '@/hooks/useRepairPrices';
@@ -41,6 +42,7 @@ export default function Index() {
   const [isExtensionRequestsOpen, setIsExtensionRequestsOpen] = useState(false);
   const [isPartsRequestsOpen, setIsPartsRequestsOpen] = useState(false);
   const [isPriceManagementOpen, setIsPriceManagementOpen] = useState(false);
+  const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(false);
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
   const { prices, addPrice, deletePrice } = useRepairPrices();
@@ -118,6 +120,7 @@ export default function Index() {
         onPartsRequests={() => setIsPartsRequestsOpen(true)}
         pendingPartsCount={partsRequests.length}
         onPriceManagement={() => setIsPriceManagementOpen(true)}
+        onAdminSettings={() => setIsAdminSettingsOpen(true)}
       />
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
@@ -294,6 +297,19 @@ export default function Index() {
         prices={prices}
         onAddPrice={addPrice}
         onDeletePrice={deletePrice}
+      />
+
+      <AdminSettingsDialog
+        isOpen={isAdminSettingsOpen}
+        onClose={() => setIsAdminSettingsOpen(false)}
+        onOpenDeviceTypes={() => {
+          setIsAdminSettingsOpen(false);
+          setIsDeviceTypesOpen(true);
+        }}
+        onOpenPriceManagement={() => {
+          setIsAdminSettingsOpen(false);
+          setIsPriceManagementOpen(true);
+        }}
       />
     </div>
   );
