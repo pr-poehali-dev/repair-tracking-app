@@ -230,14 +230,25 @@ export const calculateStats = (orders: Order[]) => ({
   inProgress: orders.filter((o) => ['diagnostics', 'repair', 'repair-continues'].includes(o.status)).length,
   ready: orders.filter((o) => ['repair-completed', 'notify-client', 'client-notified'].includes(o.status)).length,
   completed: orders.filter((o) => o.status === 'issued').length,
+  overdue: orders.filter((o) => getDeadlineStatus(o) === 'overdue').length,
   revenue: orders.reduce((sum, o) => sum + (o.price || 0), 0),
 });
 
-export const filterOrders = (orders: Order[], searchQuery: string) => {
-  return orders.filter(
-    (order) =>
-      order.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.deviceType.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+export const filterOrders = (orders: Order[], searchQuery: string, filterType?: 'all' | 'overdue') => {
+  let filtered = orders;
+  
+  if (filterType === 'overdue') {
+    filtered = filtered.filter((order) => getDeadlineStatus(order) === 'overdue');
+  }
+  
+  if (searchQuery) {
+    filtered = filtered.filter(
+      (order) =>
+        order.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.deviceType.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
+  
+  return filtered;
 };

@@ -26,6 +26,7 @@ export default function Index() {
   const { user, hasPermission } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'kanban' | 'list'>('dashboard');
+  const [filterType, setFilterType] = useState<'all' | 'overdue'>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
@@ -34,7 +35,7 @@ export default function Index() {
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
 
-  const filteredOrders = filterOrders(orders, searchQuery);
+  const filteredOrders = filterOrders(orders, searchQuery, filterType);
   const stats = calculateStats(orders);
 
   const onCreateOrder = async (formData: any) => {
@@ -69,7 +70,7 @@ export default function Index() {
       />
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="flex-1">
             <TabsList>
               <TabsTrigger value="dashboard">
@@ -86,6 +87,30 @@ export default function Index() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          
+          <div className="flex gap-2">
+            <Button
+              variant={filterType === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilterType('all')}
+            >
+              Все заказы
+            </Button>
+            <Button
+              variant={filterType === 'overdue' ? 'destructive' : 'outline'}
+              size="sm"
+              onClick={() => setFilterType('overdue')}
+              className="relative"
+            >
+              <Icon name="AlertTriangle" size={16} className="mr-2" />
+              Просроченные
+              {stats.overdue > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-white text-red-600 rounded-full text-xs font-bold">
+                  {stats.overdue}
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeView} className="space-y-6">

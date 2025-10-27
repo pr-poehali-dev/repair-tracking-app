@@ -8,13 +8,14 @@ interface OrderStatsProps {
     inProgress: number;
     ready: number;
     completed: number;
+    overdue: number;
     revenue: number;
   };
 }
 
 export default function OrderStats({ stats }: OrderStatsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
       <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
@@ -52,6 +53,20 @@ export default function OrderStats({ stats }: OrderStatsProps) {
             </div>
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <Icon name="CheckCircle2" className="text-green-600" size={24} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gradient-to-br from-red-50 to-white border-red-100">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-600">Просрочено</p>
+              <p className="text-2xl font-bold text-red-900">{stats.overdue}</p>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+              <Icon name="AlertTriangle" className="text-red-600" size={24} />
             </div>
           </div>
         </CardContent>
