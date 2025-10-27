@@ -14,6 +14,7 @@ import ExtensionRequestsDialog from '@/components/ExtensionRequestsDialog';
 import PartsRequestsDialog from '@/components/PartsRequestsDialog';
 import RepairPricesManagementDialog from '@/components/RepairPricesManagementDialog';
 import AdminSettingsDialog from '@/components/AdminSettingsDialog';
+import MasterStatsDialog from '@/components/MasterStatsDialog';
 import OrderList from '@/components/OrderList';
 import Icon from '@/components/ui/icon';
 import { useRepairPrices } from '@/hooks/useRepairPrices';
@@ -43,6 +44,7 @@ export default function Index() {
   const [isPartsRequestsOpen, setIsPartsRequestsOpen] = useState(false);
   const [isPriceManagementOpen, setIsPriceManagementOpen] = useState(false);
   const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(false);
+  const [isMasterStatsOpen, setIsMasterStatsOpen] = useState(false);
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
   const { prices, addPrice, deletePrice } = useRepairPrices();
@@ -121,6 +123,7 @@ export default function Index() {
         pendingPartsCount={partsRequests.length}
         onPriceManagement={() => setIsPriceManagementOpen(true)}
         onAdminSettings={() => setIsAdminSettingsOpen(true)}
+        onMasterStats={() => setIsMasterStatsOpen(true)}
       />
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
@@ -310,6 +313,13 @@ export default function Index() {
           setIsAdminSettingsOpen(false);
           setIsPriceManagementOpen(true);
         }}
+      />
+
+      <MasterStatsDialog
+        open={isMasterStatsOpen}
+        onOpenChange={setIsMasterStatsOpen}
+        orders={orders}
+        masterName={user?.fullName || ''}
       />
     </div>
   );

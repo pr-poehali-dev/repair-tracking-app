@@ -25,6 +25,7 @@ interface AppHeaderProps {
   pendingPartsCount?: number;
   onPriceManagement?: () => void;
   onAdminSettings?: () => void;
+  onMasterStats?: () => void;
 }
 
 export default function AppHeader({
@@ -39,8 +40,9 @@ export default function AppHeader({
   pendingPartsCount = 0,
   onPriceManagement,
   onAdminSettings,
+  onMasterStats,
 }: AppHeaderProps) {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, hasPermission, hasRole } = useAuth();
 
   const getUserInitials = (name: string) => {
     return name
@@ -166,6 +168,15 @@ export default function AppHeader({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {hasRole('master') && onMasterStats && (
+                <>
+                  <DropdownMenuItem onClick={onMasterStats}>
+                    <Icon name="BarChart3" size={16} className="mr-2" />
+                    Моя статистика
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={logout}>
                 <Icon name="LogOut" size={16} className="mr-2" />
                 Выйти
