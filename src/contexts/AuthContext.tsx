@@ -33,14 +33,15 @@ export type Permission =
   | 'edit_repair'
   | 'create_order'
   | 'manage_device_types'
-  | 'view_clients';
+  | 'view_clients'
+  | 'approve_extensions';
 
 const rolePermissions: Record<UserRole, Permission[]> = {
   director: [
     'view_orders', 'create_orders', 'edit_orders', 'delete_orders',
     'change_status', 'assign_master', 'view_finance', 'edit_finance',
     'view_warranty', 'manage_parts', 'view_all', 'edit_repair',
-    'create_order', 'manage_device_types', 'view_clients'
+    'create_order', 'manage_device_types', 'view_clients', 'approve_extensions'
   ],
   master: [
     'view_orders', 'change_status', 'view_warranty', 'edit_repair'

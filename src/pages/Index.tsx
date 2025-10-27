@@ -10,6 +10,7 @@ import KanbanBoard from '@/components/KanbanBoard';
 import DeviceTypesDialog from '@/components/DeviceTypesDialog';
 import ClientsSearchDialog from '@/components/ClientsSearchDialog';
 import AppHeader from '@/components/AppHeader';
+import ExtensionRequestsDialog from '@/components/ExtensionRequestsDialog';
 import OrderList from '@/components/OrderList';
 import Icon from '@/components/ui/icon';
 import { useOrders } from '@/hooks/useOrders';
@@ -34,6 +35,7 @@ export default function Index() {
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   const [isDeviceTypesOpen, setIsDeviceTypesOpen] = useState(false);
   const [isClientsSearchOpen, setIsClientsSearchOpen] = useState(false);
+  const [isExtensionRequestsOpen, setIsExtensionRequestsOpen] = useState(false);
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
 
@@ -41,6 +43,18 @@ export default function Index() {
   const stats = calculateStats(orders);
   const hasCriticalOverdue = hasCriticalOverdueOrders(orders, user?.username);
   const criticalOrders = getCriticalOverdueOrders(orders, user?.username);
+  
+  const extensionRequests = orders
+    .filter(o => o.extensionRequest?.status === 'pending')
+    .map(o => ({
+      orderId: o.id,
+      deviceType: o.deviceType,
+      deviceModel: o.deviceModel,
+      requestedBy: o.extensionRequest!.requestedBy,
+      requestedAt: o.extensionRequest!.requestedAt,
+      reason: o.extensionRequest!.reason,
+      status: o.extensionRequest!.status,
+    }));
 
   const onCreateOrder = async (formData: any) => {
     const newOrder = await handleCreateOrder(formData);
@@ -77,6 +91,8 @@ export default function Index() {
         onNewOrder={() => setIsNewOrderOpen(true)}
         onDeviceTypes={() => setIsDeviceTypesOpen(true)}
         onClientsSearch={() => setIsClientsSearchOpen(true)}
+        onExtensionRequests={() => setIsExtensionRequestsOpen(true)}
+        pendingRequestsCount={extensionRequests.length}
       />
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
@@ -221,6 +237,18 @@ export default function Index() {
       <DeviceTypesDialog open={isDeviceTypesOpen} onOpenChange={setIsDeviceTypesOpen} />
 
       <ClientsSearchDialog open={isClientsSearchOpen} onOpenChange={setIsClientsSearchOpen} />
+
+      <ExtensionRequestsDialog
+        open={isExtensionRequestsOpen}
+        onOpenChange={setIsExtensionRequestsOpen}
+        requests={extensionRequests}
+        onApprove={(orderId) => {
+          console.log('Approved extension for order:', orderId);
+        }}
+        onReject={(orderId) => {
+          console.log('Rejected extension for order:', orderId);
+        }}
+      />
     </div>
   );
 }

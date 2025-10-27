@@ -71,6 +71,14 @@ interface Order {
   history: OrderHistoryItem[];
   isDelayed?: boolean;
   delayReason?: string;
+  extensionRequest?: {
+    requestedBy: string;
+    requestedAt: string;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected';
+    reviewedBy?: string;
+    reviewedAt?: string;
+  };
 }
 
 interface OrderDetailsDialogProps {
@@ -158,10 +166,18 @@ export default function OrderDetailsDialog({
       });
       return;
     }
-    toast({
-      title: 'Задержка сохранена',
-      description: 'Информация о задержке ремонта обновлена',
-    });
+    
+    if (order.status === 'diagnostics') {
+      toast({
+        title: 'Запрос отправлен',
+        description: 'Запрос на продление срока диагностики отправлен директору на рассмотрение',
+      });
+    } else {
+      toast({
+        title: 'Задержка сохранена',
+        description: 'Информация о задержке ремонта обновлена',
+      });
+    }
   };
 
   return (
@@ -357,14 +373,40 @@ export default function OrderDetailsDialog({
                       onChange={(e) => setDelayReason(e.target.value)}
                       className="min-h-[80px]"
                     />
+                    {order.status === 'diagnostics' && (
+                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-md text-sm text-blue-900">
+                        <Icon name="Info" size={14} className="inline mr-1" />
+                        При сохранении будет отправлен запрос директору на продление срока диагностики на +3 дня
+                      </div>
+                    )}
                     <Button 
                       onClick={handleSaveDelay} 
                       size="sm"
                       className="mt-2"
                     >
                       <Icon name="Save" size={16} className="mr-2" />
-                      Сохранить задержку
+                      {order.status === 'diagnostics' ? 'Запросить продление' : 'Сохранить задержку'}
                     </Button>
+                  </div>
+                )}
+                
+                {order.extensionRequest && (
+                  <div className={`text-sm p-3 rounded-md border ${
+                    order.extensionRequest.status === 'pending' ? 'bg-yellow-50 border-yellow-200' :
+                    order.extensionRequest.status === 'approved' ? 'bg-green-50 border-green-200' :
+                    'bg-red-50 border-red-200'
+                  }`}>
+                    <p className="font-medium mb-1">
+                      {order.extensionRequest.status === 'pending' && '⏳ Запрос на рассмотрении'}
+                      {order.extensionRequest.status === 'approved' && '✅ Продление одобрено (+3 дня)'}
+                      {order.extensionRequest.status === 'rejected' && '❌ Продление отклонено'}
+                    </p>
+                    <p className="text-xs opacity-75">Причина: {order.extensionRequest.reason}</p>
+                    {order.extensionRequest.reviewedBy && (
+                      <p className="text-xs opacity-75 mt-1">
+                        Рассмотрел: {order.extensionRequest.reviewedBy} • {new Date(order.extensionRequest.reviewedAt!).toLocaleString('ru-RU')}
+                      </p>
+                    )}
                   </div>
                 )}
                 

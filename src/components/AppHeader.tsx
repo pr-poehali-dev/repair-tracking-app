@@ -19,6 +19,8 @@ interface AppHeaderProps {
   onNewOrder: () => void;
   onDeviceTypes: () => void;
   onClientsSearch: () => void;
+  onExtensionRequests?: () => void;
+  pendingRequestsCount?: number;
 }
 
 export default function AppHeader({
@@ -27,6 +29,8 @@ export default function AppHeader({
   onNewOrder,
   onDeviceTypes,
   onClientsSearch,
+  onExtensionRequests,
+  pendingRequestsCount = 0,
 }: AppHeaderProps) {
   const { user, logout, hasPermission } = useAuth();
 
@@ -61,6 +65,22 @@ export default function AppHeader({
             <Button onClick={onNewOrder}>
               <Icon name="Plus" size={18} className="mr-2" />
               Новый заказ
+            </Button>
+          )}
+
+          {hasPermission('approve_extensions') && onExtensionRequests && (
+            <Button 
+              onClick={onExtensionRequests}
+              variant="outline"
+              className="relative"
+            >
+              <Icon name="Bell" size={18} className="mr-2" />
+              Запросы
+              {pendingRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+                  {pendingRequestsCount}
+                </span>
+              )}
             </Button>
           )}
 

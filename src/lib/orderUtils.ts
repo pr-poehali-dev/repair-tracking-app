@@ -32,6 +32,14 @@ export interface Order {
   isOverdue?: boolean;
   isDelayed?: boolean;
   delayReason?: string;
+  extensionRequest?: {
+    requestedBy: string;
+    requestedAt: string;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected';
+    reviewedBy?: string;
+    reviewedAt?: string;
+  };
 }
 
 export const API_URL = 'https://functions.poehali.dev/e9af1ae4-2b09-4ac1-a49a-bf1172ebfc8c';
