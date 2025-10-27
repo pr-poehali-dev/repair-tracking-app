@@ -57,6 +57,8 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
   const [clientSuggestions, setClientSuggestions] = useState<Client[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const [canScrollUp, setCanScrollUp] = useState(false);
   const [formData, setFormData] = useState<NewOrderFormData>({
     clientName: '',
     clientAddress: '',
@@ -76,6 +78,23 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
   useEffect(() => {
     if (open) {
       loadDeviceTypes();
+    }
+  }, [open]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    setCanScrollUp(target.scrollTop > 10);
+    setCanScrollDown(target.scrollTop + target.clientHeight < target.scrollHeight - 10);
+  };
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => {
+        const scrollContainer = document.querySelector('[data-scroll-container]');
+        if (scrollContainer) {
+          setCanScrollDown(scrollContainer.scrollHeight > scrollContainer.clientHeight);
+        }
+      }, 100);
     }
   }, [open]);
 
@@ -207,7 +226,18 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-6">
+          {canScrollUp && (
+            <div className="absolute top-[88px] left-0 right-0 h-8 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 flex items-start justify-center">
+              <div className="mt-1 text-muted-foreground animate-bounce">
+                <Icon name="ChevronUp" size={20} />
+              </div>
+            </div>
+          )}
+          <div 
+            className="flex-1 overflow-y-auto px-6" 
+            onScroll={handleScroll}
+            data-scroll-container
+          >
             <div className="space-y-6 py-2">
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
@@ -409,8 +439,15 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
               </div>
             </div>
           </div>
+          {canScrollDown && (
+            <div className="absolute bottom-[72px] left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 flex items-end justify-center">
+              <div className="mb-1 text-muted-foreground animate-bounce">
+                <Icon name="ChevronDown" size={20} />
+              </div>
+            </div>
+          )}
 
-          <div className="flex gap-3 px-6 pb-6 pt-4 border-t bg-background shrink-0">
+          <div className="flex gap-3 px-6 pb-6 pt-4 border-t bg-background shrink-0 relative z-20">
             <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Отмена
             </Button>
