@@ -9,6 +9,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -66,6 +69,8 @@ interface Order {
   master?: string;
   repairDescription?: string;
   history: OrderHistoryItem[];
+  isDelayed?: boolean;
+  delayReason?: string;
 }
 
 interface OrderDetailsDialogProps {
@@ -98,6 +103,8 @@ export default function OrderDetailsDialog({
   const { toast } = useToast();
   const [isAssignUserOpen, setIsAssignUserOpen] = useState(false);
   const [isRepairDescOpen, setIsRepairDescOpen] = useState(false);
+  const [isDelayed, setIsDelayed] = useState(order?.isDelayed || false);
+  const [delayReason, setDelayReason] = useState(order?.delayReason || '');
 
   if (!order) return null;
 
@@ -127,6 +134,34 @@ export default function OrderDetailsDialog({
         description: 'Описание ремонта успешно добавлено',
       });
     }
+  };
+
+  const handleDelayChange = (checked: boolean) => {
+    if (checked) {
+      setIsDelayed(true);
+    } else {
+      setIsDelayed(false);
+      setDelayReason('');
+      toast({
+        title: 'Задержка снята',
+        description: 'Ремонт больше не отмечен как задержанный',
+      });
+    }
+  };
+
+  const handleSaveDelay = () => {
+    if (isDelayed && !delayReason.trim()) {
+      toast({
+        title: 'Ошибка',
+        description: 'Необходимо указать причину задержки ремонта',
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: 'Задержка сохранена',
+      description: 'Информация о задержке ремонта обновлена',
+    });
   };
 
   return (
@@ -286,6 +321,60 @@ export default function OrderDetailsDialog({
                   Описание ремонта пока не добавлено. Необходимо заполнить перед завершением ремонта.
                 </p>
               )}
+            </div>
+
+            <Separator />
+
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Icon name="Clock" size={18} />
+                Задержка ремонта
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="delay" 
+                    checked={isDelayed}
+                    onCheckedChange={handleDelayChange}
+                  />
+                  <Label 
+                    htmlFor="delay" 
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Отметить как задержанный ремонт
+                  </Label>
+                </div>
+                
+                {isDelayed && (
+                  <div className="space-y-2">
+                    <Label htmlFor="delayReason" className="text-sm font-medium">
+                      Причина задержки <span className="text-red-500">*</span>
+                    </Label>
+                    <Textarea
+                      id="delayReason"
+                      placeholder="Укажите причину задержки ремонта..."
+                      value={delayReason}
+                      onChange={(e) => setDelayReason(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                    <Button 
+                      onClick={handleSaveDelay} 
+                      size="sm"
+                      className="mt-2"
+                    >
+                      <Icon name="Save" size={16} className="mr-2" />
+                      Сохранить задержку
+                    </Button>
+                  </div>
+                )}
+                
+                {order.delayReason && !isDelayed && (
+                  <div className="text-sm bg-amber-50 border border-amber-200 p-3 rounded-md">
+                    <p className="font-medium text-amber-900 mb-1">Предыдущая задержка:</p>
+                    <p className="text-amber-800">{order.delayReason}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {order.master && (

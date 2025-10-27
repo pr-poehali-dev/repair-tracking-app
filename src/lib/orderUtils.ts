@@ -30,6 +30,8 @@ export interface Order {
   statusDeadline?: string;
   statusChangedAt?: string;
   isOverdue?: boolean;
+  isDelayed?: boolean;
+  delayReason?: string;
 }
 
 export const API_URL = 'https://functions.poehali.dev/e9af1ae4-2b09-4ac1-a49a-bf1172ebfc8c';
