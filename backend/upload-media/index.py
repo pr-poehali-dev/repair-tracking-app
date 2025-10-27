@@ -1,18 +1,19 @@
-'''
-Business: Upload and manage media files (images/videos) for repair orders
-Args: event - dict with httpMethod, body (multipart form data or JSON for listing)
-      context - object with attributes: request_id, function_name
-Returns: HTTP response with file URL or list of media files
-'''
-
 import json
 import base64
 import os
 import uuid
-from typing import Dict, Any, Optional
-from datetime import datetime
+from typing import Dict, Any
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import boto3
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+    '''
+    Business: Upload and manage media files (photos/videos) for repair orders
+    Args: event - dict with httpMethod, body, queryStringParameters
+          context - object with attributes: request_id, function_name
+    Returns: HTTP response with file URL or list of media files
+    '''
     method: str = event.get('httpMethod', 'GET')
     
     if method == 'OPTIONS':
@@ -36,6 +37,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return get_order_media(event, headers)
     elif method == 'POST':
         return upload_media(event, headers)
+    elif method == 'DELETE':
+        return delete_media(event, headers)
     
     return {
         'statusCode': 405,
@@ -45,8 +48,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
 
 def get_order_media(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, Any]:
-    import psycopg2
-    
     params = event.get('queryStringParameters', {}) or {}
     order_id = params.get('orderId')
     
@@ -58,117 +59,173 @@ def get_order_media(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str,
         }
     
     dsn = os.environ.get('DATABASE_URL')
-    
     conn = psycopg2.connect(dsn)
-    cur = conn.cursor()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    cur.execute('''
-        SELECT id, order_id, file_url, file_type, file_name, 
-               file_size, uploaded_by, uploaded_at, description
-        FROM order_media
-        WHERE order_id = %s
-        ORDER BY uploaded_at DESC
-    ''' % order_id)
-    
-    rows = cur.fetchall()
-    
-    media_list = []
-    for row in rows:
-        media_list.append({
-            'id': row[0],
-            'orderId': row[1],
-            'fileUrl': row[2],
-            'fileType': row[3],
-            'fileName': row[4],
-            'fileSize': row[5],
-            'uploadedBy': row[6],
-            'uploadedAt': row[7].isoformat() if row[7] else None,
-            'description': row[8]
-        })
-    
-    cur.close()
-    conn.close()
-    
-    return {
-        'statusCode': 200,
-        'headers': headers,
-        'body': json.dumps(media_list)
-    }
+    try:
+        cursor.execute('''
+            SELECT id, order_id, file_url, file_type, file_name, 
+                   file_size, uploaded_by, uploaded_at, description
+            FROM order_media
+            WHERE order_id = %s
+            ORDER BY uploaded_at DESC
+        ''', (order_id,))
+        
+        rows = cursor.fetchall()
+        
+        media_list = []
+        for row in rows:
+            media_list.append({
+                'id': row['id'],
+                'orderId': row['order_id'],
+                'fileUrl': row['file_url'],
+                'fileType': row['file_type'],
+                'fileName': row['file_name'],
+                'fileSize': row['file_size'],
+                'uploadedBy': row['uploaded_by'],
+                'uploadedAt': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
+                'description': row['description']
+            })
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'isBase64Encoded': False,
+            'body': json.dumps(media_list)
+        }
+    finally:
+        cursor.close()
+        conn.close()
 
 
 def upload_media(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, Any]:
-    import psycopg2
-    import boto3
-    
     body_data = json.loads(event.get('body', '{}'))
     
     order_id = body_data.get('orderId')
     file_base64 = body_data.get('fileData')
     file_name = body_data.get('fileName')
-    file_type = body_data.get('fileType')
-    uploaded_by = body_data.get('uploadedBy')
+    file_type = body_data.get('fileType', 'image')
+    uploaded_by = body_data.get('uploadedBy', 'Unknown')
     description = body_data.get('description', '')
     
-    if not all([order_id, file_base64, file_name, file_type]):
+    if not all([order_id, file_base64, file_name]):
         return {
             'statusCode': 400,
             'headers': headers,
-            'body': json.dumps({'error': 'Missing required fields'})
+            'body': json.dumps({'error': 'Missing required fields: orderId, fileData, fileName'})
         }
     
-    file_data = base64.b64decode(file_base64)
-    file_size = len(file_data)
+    try:
+        file_data = base64.b64decode(file_base64)
+        file_size = len(file_data)
+        
+        file_ext = file_name.split('.')[-1].lower() if '.' in file_name else 'jpg'
+        unique_name = f"order-{order_id}/{uuid.uuid4()}.{file_ext}"
+        
+        s3_bucket = os.environ.get('S3_BUCKET', 'poehali-files')
+        s3_endpoint = os.environ.get('S3_ENDPOINT', 'https://storage.yandexcloud.net')
+        
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=s3_endpoint,
+            aws_access_key_id=os.environ.get('S3_ACCESS_KEY'),
+            aws_secret_access_key=os.environ.get('S3_SECRET_KEY')
+        )
+        
+        content_type_map = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'mp4': 'video/mp4',
+            'mov': 'video/quicktime'
+        }
+        content_type = content_type_map.get(file_ext, 'application/octet-stream')
+        
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=unique_name,
+            Body=file_data,
+            ContentType=content_type,
+            ACL='public-read'
+        )
+        
+        file_url = f"{s3_endpoint}/{s3_bucket}/{unique_name}"
+        
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg2.connect(dsn)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('''
+            INSERT INTO order_media 
+            (order_id, file_url, file_type, file_name, file_size, uploaded_by, description)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (order_id, file_url, file_type, file_name, file_size, uploaded_by, description))
+        
+        result = cursor.fetchone()
+        media_id = result['id']
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'isBase64Encoded': False,
+            'body': json.dumps({
+                'id': media_id,
+                'fileUrl': file_url,
+                'fileName': file_name,
+                'fileType': file_type,
+                'fileSize': file_size,
+                'success': True
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': str(e)})
+        }
+
+
+def delete_media(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, Any]:
+    params = event.get('queryStringParameters', {}) or {}
+    media_id = params.get('id')
     
-    file_ext = file_name.split('.')[-1] if '.' in file_name else 'jpg'
-    unique_name = f"order-{order_id}/{uuid.uuid4()}.{file_ext}"
-    
-    s3_bucket = os.environ.get('S3_BUCKET', 'poehali-files')
-    s3_endpoint = os.environ.get('S3_ENDPOINT', 'https://storage.yandexcloud.net')
-    
-    s3_client = boto3.client(
-        's3',
-        endpoint_url=s3_endpoint,
-        aws_access_key_id=os.environ.get('S3_ACCESS_KEY'),
-        aws_secret_access_key=os.environ.get('S3_SECRET_KEY')
-    )
-    
-    content_type = 'image/jpeg' if file_type == 'image' else 'video/mp4'
-    
-    s3_client.put_object(
-        Bucket=s3_bucket,
-        Key=unique_name,
-        Body=file_data,
-        ContentType=content_type
-    )
-    
-    file_url = f"{s3_endpoint}/{s3_bucket}/{unique_name}"
+    if not media_id:
+        return {
+            'statusCode': 400,
+            'headers': headers,
+            'body': json.dumps({'error': 'id is required'})
+        }
     
     dsn = os.environ.get('DATABASE_URL')
     conn = psycopg2.connect(dsn)
-    cur = conn.cursor()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    cur.execute('''
-        INSERT INTO order_media 
-        (order_id, file_url, file_type, file_name, file_size, uploaded_by, description)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-    ''' % (order_id, repr(file_url), repr(file_type), repr(file_name), 
-           file_size, repr(uploaded_by) if uploaded_by else 'NULL', repr(description)))
-    
-    media_id = cur.fetchone()[0]
-    
-    conn.commit()
-    cur.close()
-    conn.close()
-    
-    return {
-        'statusCode': 200,
-        'headers': headers,
-        'body': json.dumps({
-            'id': media_id,
-            'fileUrl': file_url,
-            'fileName': file_name,
-            'fileType': file_type,
-            'fileSize': file_size
-        })
-    }
+    try:
+        cursor.execute('SELECT file_url FROM order_media WHERE id = %s', (media_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({'error': 'Media not found'})
+            }
+        
+        cursor.execute('DELETE FROM order_media WHERE id = %s', (media_id,))
+        conn.commit()
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps({'success': True})
+        }
+    finally:
+        cursor.close()
+        conn.close()
