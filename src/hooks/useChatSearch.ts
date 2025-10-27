@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const ORDERS_API_URL = 'https://functions.poehali.dev/e9af1ae4-2b09-4ac1-a49a-bf1172ebfc8c';
 
-export function useChatSearch(searchQuery: string) {
+export function useChatSearch(searchQuery: string, userId?: string) {
   const [chatMatches, setChatMatches] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -15,13 +15,19 @@ export function useChatSearch(searchQuery: string) {
 
       try {
         setIsSearching(true);
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (userId) {
+          headers['X-User-Id'] = userId;
+        }
+        
         const response = await fetch(
           `${ORDERS_API_URL}?action=search-chat&q=${encodeURIComponent(searchQuery)}`,
           {
             method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers,
           }
         );
 
@@ -41,7 +47,7 @@ export function useChatSearch(searchQuery: string) {
 
     const debounceTimer = setTimeout(searchInChats, 500);
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
+  }, [searchQuery, userId]);
 
   return { chatMatches, isSearching };
 }

@@ -52,7 +52,7 @@ export default function Index() {
 
   const { orders, isLoading, handleCreateOrder, handleStatusChange, handleSaveRepairDescription } = useOrders(user);
   const { prices, addPrice, deletePrice } = useRepairPrices();
-  const { chatMatches } = useChatSearch(searchQuery);
+  const { chatMatches } = useChatSearch(searchQuery, user?.id);
 
   const filteredOrders = filterOrders(orders, searchQuery, filterType, chatMatches);
   const stats = calculateStats(orders);
