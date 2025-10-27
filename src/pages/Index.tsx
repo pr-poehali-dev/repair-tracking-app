@@ -19,7 +19,9 @@ import {
   priorityConfig, 
   getNextStatus, 
   calculateStats, 
-  filterOrders 
+  filterOrders,
+  hasCriticalOverdueOrders,
+  getCriticalOverdueOrders
 } from '@/lib/orderUtils';
 
 export default function Index() {
@@ -37,6 +39,8 @@ export default function Index() {
 
   const filteredOrders = filterOrders(orders, searchQuery, filterType);
   const stats = calculateStats(orders);
+  const hasCriticalOverdue = hasCriticalOverdueOrders(orders, user?.username);
+  const criticalOrders = getCriticalOverdueOrders(orders, user?.username);
 
   const onCreateOrder = async (formData: any) => {
     const newOrder = await handleCreateOrder(formData);
@@ -44,6 +48,12 @@ export default function Index() {
   };
 
   const onStatusChange = (orderId: string, newStatus: any) => {
+    if (hasCriticalOverdue) {
+      const isCriticalOrder = criticalOrders.some(o => o.id === orderId);
+      if (!isCriticalOrder) {
+        return;
+      }
+    }
     handleStatusChange(orderId, newStatus, selectedOrder, setSelectedOrder);
   };
 
@@ -70,6 +80,32 @@ export default function Index() {
       />
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
+        {hasCriticalOverdue && (
+          <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 flex items-start gap-3">
+            <Icon name="AlertTriangle" className="text-red-600 mt-0.5" size={24} />
+            <div className="flex-1">
+              <h3 className="font-bold text-red-900 mb-1">
+                Блокировка работы с новыми заказами
+              </h3>
+              <p className="text-sm text-red-800 mb-2">
+                У вас есть {criticalOrders.length} {criticalOrders.length === 1 ? 'заказ' : 'заказа'} в статусе "Диагностика" с превышением срока 3 дня. 
+                Необходимо завершить работу с этими заказами перед началом работы с другими заявками.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {criticalOrders.map(order => (
+                  <button
+                    key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                    className="text-xs bg-red-100 hover:bg-red-200 text-red-900 px-3 py-1 rounded-md font-medium transition-colors"
+                  >
+                    {order.id} - {order.deviceType}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between gap-4">
           <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="flex-1">
             <TabsList>

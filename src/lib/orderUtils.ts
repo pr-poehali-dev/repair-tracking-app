@@ -133,7 +133,7 @@ export const priorityConfig = {
 
 export const statusDeadlineHours: Record<OrderStatus, number> = {
   'received': 2,
-  'diagnostics': 24,
+  'diagnostics': 72,
   'repair': 48,
   'parts-needed': 4,
   'cost-approval': 12,
@@ -246,6 +246,22 @@ const getUrgencyScore = (order: Order): number => {
   if (deadlineStatus === 'danger') return 3;
   if (deadlineStatus === 'warning') return 2;
   return 1;
+};
+
+export const hasCriticalOverdueOrders = (orders: Order[], masterName?: string): boolean => {
+  return orders.some(order => 
+    order.status === 'diagnostics' && 
+    order.master === masterName &&
+    getDeadlineStatus(order) === 'overdue'
+  );
+};
+
+export const getCriticalOverdueOrders = (orders: Order[], masterName?: string): Order[] => {
+  return orders.filter(order => 
+    order.status === 'diagnostics' && 
+    order.master === masterName &&
+    getDeadlineStatus(order) === 'overdue'
+  );
 };
 
 export const filterOrders = (orders: Order[], searchQuery: string, filterType?: 'all' | 'overdue') => {

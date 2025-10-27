@@ -51,6 +51,10 @@ interface Order {
   price?: number;
   master?: string;
   repairDescription?: string;
+  statusDeadline?: string;
+  statusChangedAt?: string;
+  isDelayed?: boolean;
+  delayReason?: string;
 }
 
 interface OrderCardProps {
