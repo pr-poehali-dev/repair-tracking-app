@@ -59,4 +59,9 @@ export interface Order {
     reviewedBy?: string;
     reviewedAt?: string;
   };
+  ourDeviceData?: {
+    purchasePrice?: number;
+    deliveryCost?: number;
+    possibleIssue?: string;
+  };
 }

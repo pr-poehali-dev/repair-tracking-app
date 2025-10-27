@@ -48,7 +48,11 @@ export interface NewOrderFormData {
   appearance: string;
   accessories: string;
   priority: 'low' | 'medium' | 'high';
-  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless';
+  repairType: 'warranty' | 'repeat' | 'paid' | 'cashless' | 'our-device';
+  receivedDate?: string;
+  purchasePrice?: number;
+  deliveryCost?: number;
+  possibleIssue?: string;
 }
 
 export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrderDialogProps) {
@@ -71,6 +75,10 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
     accessories: '',
     priority: 'medium',
     repairType: 'paid',
+    receivedDate: '',
+    purchasePrice: undefined,
+    deliveryCost: undefined,
+    possibleIssue: '',
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof NewOrderFormData, string>>>({});
@@ -145,7 +153,12 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
   };
 
   const handleChange = (field: keyof NewOrderFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'purchasePrice' || field === 'deliveryCost') {
+      setFormData(prev => ({ ...prev, [field]: value ? Number(value) : undefined }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+    
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -163,7 +176,12 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
     if (!formData.clientName.trim()) newErrors.clientName = 'Обязательное поле';
     if (!formData.clientPhone.trim()) newErrors.clientPhone = 'Обязательное поле';
     if (!formData.deviceType.trim()) newErrors.deviceType = 'Обязательное поле';
-    if (!formData.issue.trim()) newErrors.issue = 'Обязательное поле';
+    
+    if (formData.repairType === 'our-device') {
+      if (!formData.receivedDate?.trim()) newErrors.receivedDate = 'Обязательное поле';
+    } else {
+      if (!formData.issue.trim()) newErrors.issue = 'Обязательное поле';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -202,6 +220,10 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
         accessories: '',
         priority: 'medium',
         repairType: 'paid',
+        receivedDate: '',
+        purchasePrice: undefined,
+        deliveryCost: undefined,
+        possibleIssue: '',
       });
       setErrors({});
       setClientSuggestions([]);
@@ -388,56 +410,121 @@ export default function NewOrderDialog({ open, onOpenChange, onSubmit }: NewOrde
 
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Icon name="AlertCircle" size={18} className="text-primary" />
-                  Заявленная неисправность
+                  <Icon name="Settings" size={18} className="text-primary" />
+                  Параметры заказа
                 </h3>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="issue">Описание проблемы <span className="text-destructive">*</span></Label>
-                    <Textarea
-                      id="issue"
-                      placeholder="Подробное описание неисправности со слов клиента"
-                      value={formData.issue}
-                      onChange={(e) => handleChange('issue', e.target.value)}
-                      rows={3}
-                      className={errors.issue ? 'border-destructive' : ''}
-                    />
-                    {errors.issue && <p className="text-xs text-destructive mt-1">{errors.issue}</p>}
+                    <Label htmlFor="repairType">Вид ремонта</Label>
+                    <Select value={formData.repairType} onValueChange={(value: any) => handleChange('repairType', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="warranty">Гарантийный</SelectItem>
+                        <SelectItem value="repeat">Повторный</SelectItem>
+                        <SelectItem value="paid">Платный</SelectItem>
+                        <SelectItem value="cashless">Безнал</SelectItem>
+                        <SelectItem value="our-device">Наша техника</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="repairType">Вид ремонта</Label>
-                      <Select value={formData.repairType} onValueChange={(value: any) => handleChange('repairType', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="warranty">Гарантийный</SelectItem>
-                          <SelectItem value="repeat">Повторный</SelectItem>
-                          <SelectItem value="paid">Платный</SelectItem>
-                          <SelectItem value="cashless">Безнал</SelectItem>
-                          <SelectItem value="our-device">Наша техника</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="priority">Приоритет</Label>
-                      <Select value={formData.priority} onValueChange={(value: any) => handleChange('priority', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Низкий</SelectItem>
-                          <SelectItem value="medium">Средний</SelectItem>
-                          <SelectItem value="high">Высокий</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="priority">Приоритет</Label>
+                    <Select value={formData.priority} onValueChange={(value: any) => handleChange('priority', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Низкий</SelectItem>
+                        <SelectItem value="medium">Средний</SelectItem>
+                        <SelectItem value="high">Высокий</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
+
+              <Separator />
+
+              {formData.repairType === 'our-device' ? (
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Icon name="Package" size={18} className="text-primary" />
+                    Данные о нашей технике
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="receivedDate">Дата поступления техники <span className="text-destructive">*</span></Label>
+                      <Input
+                        id="receivedDate"
+                        type="date"
+                        value={formData.receivedDate}
+                        onChange={(e) => handleChange('receivedDate', e.target.value)}
+                        className={errors.receivedDate ? 'border-destructive' : ''}
+                      />
+                      {errors.receivedDate && <p className="text-xs text-destructive mt-1">{errors.receivedDate}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="purchasePrice">Стоимость покупки, ₽</Label>
+                        <Input
+                          id="purchasePrice"
+                          type="number"
+                          placeholder="0"
+                          value={formData.purchasePrice || ''}
+                          onChange={(e) => handleChange('purchasePrice', e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="deliveryCost">Стоимость доставки, ₽</Label>
+                        <Input
+                          id="deliveryCost"
+                          type="number"
+                          placeholder="0"
+                          value={formData.deliveryCost || ''}
+                          onChange={(e) => handleChange('deliveryCost', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="possibleIssue">Возможная неисправность</Label>
+                      <Textarea
+                        id="possibleIssue"
+                        placeholder="Предполагаемые проблемы или симптомы"
+                        value={formData.possibleIssue}
+                        onChange={(e) => handleChange('possibleIssue', e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Icon name="AlertCircle" size={18} className="text-primary" />
+                    Заявленная неисправность
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="issue">Описание проблемы <span className="text-destructive">*</span></Label>
+                      <Textarea
+                        id="issue"
+                        placeholder="Подробное описание неисправности со слов клиента"
+                        value={formData.issue}
+                        onChange={(e) => handleChange('issue', e.target.value)}
+                        rows={3}
+                        className={errors.issue ? 'border-destructive' : ''}
+                      />
+                      {errors.issue && <p className="text-xs text-destructive mt-1">{errors.issue}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           {canScrollDown && (

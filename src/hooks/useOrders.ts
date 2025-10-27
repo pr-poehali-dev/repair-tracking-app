@@ -78,6 +78,13 @@ export function useOrders(user: User | null) {
           user: user?.fullName || 'Система',
         },
       ],
+      ...(formData.repairType === 'our-device' && {
+        ourDeviceData: {
+          purchasePrice: formData.purchasePrice,
+          deliveryCost: formData.deliveryCost,
+          possibleIssue: formData.possibleIssue,
+        }
+      })
     };
     
     try {
