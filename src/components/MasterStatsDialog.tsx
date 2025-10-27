@@ -53,6 +53,9 @@ export default function MasterStatsDialog({
     totalRevenue: filteredOrders
       .filter(o => o.status === 'ready' || o.status === 'completed')
       .reduce((sum, o) => sum + (o.price || 0), 0),
+    masterSalary: filteredOrders
+      .filter(o => o.status === 'ready' || o.status === 'completed')
+      .reduce((sum, o) => sum + ((o.price || 0) * 0.5), 0),
     avgRepairTime: 0,
   };
 
@@ -144,6 +147,19 @@ export default function MasterStatsDialog({
             </div>
           </div>
 
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
+            <CardHeader className="pb-3">
+              <CardDescription className="text-green-700 font-medium">Моя зарплата за период</CardDescription>
+              <CardTitle className="text-4xl text-green-600">{Math.round(stats.masterSalary).toLocaleString()} ₽</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-sm text-green-700">
+                <Icon name="Wallet" size={16} />
+                50% от стоимости {stats.completed} завершённых ремонтов
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
@@ -186,7 +202,7 @@ export default function MasterStatsDialog({
 
             <Card>
               <CardHeader className="pb-3">
-                <CardDescription>Выручка</CardDescription>
+                <CardDescription>Выручка компании</CardDescription>
                 <CardTitle className="text-3xl">{stats.totalRevenue.toLocaleString()} ₽</CardTitle>
               </CardHeader>
               <CardContent>
@@ -216,6 +232,12 @@ export default function MasterStatsDialog({
                 <span className="text-sm text-muted-foreground">Средний чек</span>
                 <span className="font-semibold">
                   {stats.completed > 0 ? `${Math.round(stats.totalRevenue / stats.completed).toLocaleString()} ₽` : 'Нет данных'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b">
+                <span className="text-sm text-muted-foreground">Средняя зарплата за заказ</span>
+                <span className="font-semibold text-green-600">
+                  {stats.completed > 0 ? `${Math.round(stats.masterSalary / stats.completed).toLocaleString()} ₽` : 'Нет данных'}
                 </span>
               </div>
               <div className="flex items-center justify-between py-2">
